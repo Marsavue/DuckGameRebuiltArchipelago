@@ -349,6 +349,9 @@ namespace DuckGame
                 if (cancelLoading)
                     return;
                 Thing thing1 = Thing.LoadThing(node);
+                if (thing1 is Equipper){
+                    if (!ArchipelagoClient.ItemExists((thing1 as Equipper).GetContainedInstance())) continue;
+                }
                 if (thing1 != null && (_data.metaData.version >= 1 || !Thing.CheckForBozoData(thing1)))
                 {
                     if (!ContentProperties.GetBag(thing1.GetType()).GetOrDefault("isOnlineCapable", true) || thing1.serverOnly && !Network.isServer)

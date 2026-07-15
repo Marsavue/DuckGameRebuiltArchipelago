@@ -205,6 +205,11 @@
     <AssemblyName>DuckGame</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+
+    <Reference Include="Archipelago.MultiClient.Net, Version=6.7.1, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Archipelago.MultiClient.Net.6.7.1\lib\net45\Archipelago.MultiClient.Net.dll</HintPath>
+    </Reference>
+
     <Reference Include="0Harmony, Version=2.4.2.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\deps\0Harmony.dll</HintPath>
@@ -241,8 +246,11 @@
     <Reference Include="NAudio">
       <HintPath>lib\NAudio.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+    <!-- <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference> -->
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\packages\Archipelago.MultiClient.Net.6.7.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="NVorbis, Version=0.10.5.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\NVorbis.0.10.5\lib\net45\NVorbis.dll</HintPath>
@@ -303,6 +311,9 @@
     <Reference Include="System.IO.Compression.FileSystem" />
   </ItemGroup>
   <ItemGroup>
+  
+    <Compile Include="src\ArchipelagoClient.cs" />
+
     <Compile Include="AddedContent\Biverom\Tape\Guns\Propaganda.cs" />
     <Compile Include="AddedContent\Biverom\TreeSawing\FallingTree.cs" />
     <Compile Include="AddedContent\Biverom\TreeSawing\NMSawTree.cs" />

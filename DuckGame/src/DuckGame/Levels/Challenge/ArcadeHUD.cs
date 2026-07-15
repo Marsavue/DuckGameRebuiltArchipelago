@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace DuckGame
 {
@@ -105,6 +106,9 @@ namespace DuckGame
             bool prevWon = false;
             foreach (ChallengeCard card in _cards)
             {
+                bool exists = ArchipelagoClient.LevelExists(card.challenge.levelID);
+                card.unlocked = exists;
+                continue;
                 if (FireDebug.Debugging)
                 {
                     card.unlocked = true;
@@ -133,6 +137,9 @@ namespace DuckGame
 
         public bool CanUnlockChallenges()
         {
+            if (ArchipelagoClient.LevelExists(_cards[1].challenge.levelID) && !_cards[1].unlocked || ArchipelagoClient.LevelExists(_cards[2].challenge.levelID) && !_cards[2].unlocked)
+                return true;
+            return false;
             bool flag1 = true;
             bool flag2 = false;
             foreach (ChallengeCard card in _cards)

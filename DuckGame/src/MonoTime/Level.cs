@@ -287,6 +287,8 @@ namespace DuckGame
 
         public virtual void AddThing(Thing t)
         {
+            if ((t is Holdable || t is Equipment) && t is not RagdollPart){
+                if (!ArchipelagoClient.ItemExists(t)) return;}
             if (Corderator.instance != null && !Recorderator.Playing && Corderator.instance.cFrame > 0 && t.shouldhavevessel)
             {
                 Type typeoid = t.GetType();

@@ -54,11 +54,15 @@ namespace DuckGame
         private bool _fading;
         private RenderTarget2D _captureTarget;
 
+        private string challengeName = "";
+
         public FollowCam followCam => _followCam;
 
         public ChallengeLevel(string name)
           : base(name)
         {
+            // Console.WriteLine(name + " Started");
+            challengeName = name;
             _followCam = new FollowCam
             {
                 lerpMult = 1f,
@@ -161,6 +165,7 @@ namespace DuckGame
             _developer = false;
             if (challenge.wonTrophies.Count > 0)
             {
+                ArchipelagoClient.SendItem(challengeName,challenge.wonTrophies[0].type.ToString());
                 SFX.Play("scoreDing");
                 _win = true;
                 if (challenge.wonTrophies[0].type == TrophyType.Developer)

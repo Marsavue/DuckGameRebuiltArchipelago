@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
+using System;
 
 namespace DuckGame
 {
@@ -147,6 +148,10 @@ namespace DuckGame
 
         public bool CheckUnlocked(bool ignoreAlreadyUnlocked = true)
         {
+            // Console.WriteLine("CHECK");
+            if (ArchipelagoClient.LevelExists(challenge01.value) || ArchipelagoClient.LevelExists(challenge02.value) || ArchipelagoClient.LevelExists(challenge03.value))
+                return true;
+            return false;
             if (_data == null || ignoreAlreadyUnlocked && _unlocked)
                 return false;
             // if (FireDebug.Debugging)

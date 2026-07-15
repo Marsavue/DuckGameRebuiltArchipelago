@@ -74,6 +74,7 @@ namespace DuckGame
                     door.locked = !Unlocks.IsUnlocked("BASEMENTKEY", Profiles.active[0]);
                     if (DGRSettings.TemporaryUnlockAll)
                         door.locked = false;
+                    door.locked = false;
                 }
             }
         }
@@ -567,15 +568,7 @@ namespace DuckGame
                             {
                                 _unlockMachines.Clear();
                                 foreach (ArcadeMachine challenge in _challenges)
-                                {
-                                    if (challenge.CheckUnlocked())
-                                        _unlockMachines.Add(challenge);
-                                }
-                                if (_unlockMachines.Count > 0)
-                                {
-                                    _desiredState = ArcadeState.UnlockMachine;
-                                    return;
-                                }
+                                    challenge.unlocked = challenge.CheckUnlocked();
                                 if (!basementWasUnlocked && Unlocks.IsUnlocked("BASEMENTKEY", Profiles.active[0]))
                                 {
                                     spawnKey = true;

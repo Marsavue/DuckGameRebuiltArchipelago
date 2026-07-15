@@ -1051,8 +1051,11 @@ namespace DuckGame
         public static DuckXML LoadDuckXML(string path)
         {
             Cloud.ReplaceLocalFileWithCloudFile(path);
-            if (!File.Exists(path))
-                return null;
+            // FOR TESTING SO WE DON'T LOAD SAVES
+            return null;
+
+            // if (!File.Exists(path))
+            //     return null;
             if (MonoMain.logFileOperations)
                 DevConsole.Log(DCSection.General, "DuckFile.LoadDuckXML(" + path + ")");
             DuckXML duckXml = null;
@@ -1068,6 +1071,7 @@ namespace DuckGame
 
         public static void SaveDuckXML(DuckXML doc, string path)
         {
+            return;
             if (Program.IsLanTestUser) return;
             path = PreparePath(path, true);
             string docString = doc.ToString();
