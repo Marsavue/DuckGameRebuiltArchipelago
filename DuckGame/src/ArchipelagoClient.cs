@@ -199,6 +199,7 @@ namespace DuckGame
         }
         public static void SendItem(string level,string medal){
             var loc = session.Locations.GetLocationIdFromName("DuckGame",level2name[level]+" "+medal);
+            if (session.Locations.AllLocationsChecked.Count >= name2level.Count*2){session.SetGoalAchieved();}
             if (loc == -1){return;}
             session.Locations.CompleteLocationChecksAsync(loc);
         }
