@@ -28,9 +28,9 @@ jobs:
         run: |
           mkdir ./bin
           cp ./DuckGame/lib/* ./bin
-
-      - name: Build with AutoUpdater
-        run: msbuild /m /p:Configuration=ReleaseAutoUpdater .
+          
+      - name: Build without AutoUpdater
+        run: msbuild /m /p:Configuration=Release .
 
       - name: Zip binaries
         run: |
@@ -46,30 +46,3 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ./DuckGameRebuilt.zip
           overwrite: true
-
-      - name: Add Project Dependencies [#2]
-        run: |
-          mkdir ./bin
-          cp ./DuckGame/lib/* ./bin
-
-      - name: Build without AutoUpdater
-        run: msbuild /m /p:Configuration=Release .
-
-      - name: Reorganize files for DGR mod
-        run: | 
-          mv ./bin ./Rebuilder/dgr
-          find ./Rebuilder -maxdepth 1 ! \( -name "mod.conf" -o -name "Rebuilder.dll" \) -type f -exec rm {} +
-          rm -r ./Rebuilder/build
-          mkdir ./steammod
-          mv ./Rebuilder ./steammod/Rebuilder
-
-      - name: Update DGR mod
-        uses: AnarkisGaming/workshop@v1
-        with:
-          appID: 312530
-          publishedFileID: ${{ vars.WORKSHOP_ID }}
-          path: ./steammod
-          changelog: ${{ github.event.release.body }}
-        env:
-          STEAM_ACCOUNT_NAME: "DuckGameRebuilt"
-          STEAM_PASSWORD: ${{ secrets.STEAM_PASS }}
