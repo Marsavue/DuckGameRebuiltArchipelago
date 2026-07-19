@@ -75,7 +75,7 @@
 
         public void InitializeEntryMenu(UIComponent pGroup, UIMenu pReturn)
         {
-            _enterStringMenu = !(_id == "port") ? new UIStringEntryMenu(false, "SET " + _text, _field) : new UIStringEntryMenu(false, "SET " + _text, _field, 6, true, 1337, 55535);
+            _enterStringMenu = !(_id == "port") ? new UIStringEntryMenu(false, "SET " + _text, _field) : new UIStringEntryMenu(false, "SET " + _text, _field, 6, true, 0, 65535);
             _enterStringMenu.SetBackFunction(new UIMenuActionOpenMenu(_enterStringMenu, pReturn));
             _enterStringMenu.Close();
             pGroup.Add(_enterStringMenu, false);

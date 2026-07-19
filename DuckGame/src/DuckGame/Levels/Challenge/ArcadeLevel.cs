@@ -113,6 +113,7 @@ namespace DuckGame
 
         public override void Initialize()
         {
+            ArchipelagoClient.Connect();
             if (editor != null && editor.saveName != "") // Is in Editor
             {
                 string[] levels = DuckFile.GetFiles(System.IO.Directory.GetParent(System.IO.Directory.GetParent(editor.saveName).FullName).FullName, "*.lev", System.IO.SearchOption.AllDirectories);
@@ -377,6 +378,7 @@ namespace DuckGame
                         if (_quit.value)
                         {
                             _quitting = true;
+                            ArchipelagoClient.Disconnect();
                         }
                         else
                         {

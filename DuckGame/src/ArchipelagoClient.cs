@@ -14,7 +14,7 @@ using HarmonyLib;
 
 namespace DuckGame
 {   
-    internal class ArchipelagoClient
+    internal static class ArchipelagoClient
     {
         private static readonly Dictionary<string,string> name2level = new Dictionary<string, string>{
             { "VARIETY ZONE - OBSTACLE COURSE", "1abc0a39-09e1-424f-9e21-9602c41b7da9" },
@@ -120,16 +120,23 @@ namespace DuckGame
         //     {typeof(Grapple),"Grapple"},
         //     {typeof(Boots),"Boots"},
         // };
-        private static ArchipelagoSession session ;
+        private static ArchipelagoSession session;
         private static List<string> availableLevels = new List<string>();
         private static List<Type> availableItems = new List<Type>();
+        public static string slot = "";
+        public static string address = "archipelago.gg";
+        public static string port = "38281";
+        public static string pass = "";
 
         public static void Connect()
-        {   
-            string server = "127.0.0.1";
-            string user = "MarsDuckGame";
-            string pass = "";
-            session = ArchipelagoSessionFactory.CreateSession(server, 38281);
+        {
+            availableLevels.Clear();
+            availableItems.Clear();
+            bool success = int.TryParse(port, out int portNum);
+            if (!success){
+                return;
+            }
+            session = ArchipelagoSessionFactory.CreateSession(address, portNum);
             session.Items.ItemReceived += Items_ItemReceived;
 
             LoginResult result;
@@ -137,7 +144,7 @@ namespace DuckGame
             try
             {
                 // handle TryConnectAndLogin attempt here and save the returned object to `result`
-                result = session.TryConnectAndLogin("DuckGame", user, ItemsHandlingFlags.AllItems);
+                result = session.TryConnectAndLogin("DuckGame", slot, ItemsHandlingFlags.AllItems,null,null,null,pass,true);
             }
             catch (Exception e)
             {
@@ -147,7 +154,7 @@ namespace DuckGame
             if (!result.Successful)
             {
                 LoginFailure failure = (LoginFailure)result;
-                string errorMessage = $"Failed to Connect to {server} as {user}:";
+                string errorMessage = $"Failed to Connect to {address} as {slot}:";
                 foreach (string error in failure.Errors)
                 {
                     errorMessage += $"\n    {error}";
@@ -165,6 +172,12 @@ namespace DuckGame
             // initial connection (e.g. a copy of the slot data as `loginSuccess.SlotData`)
             var loginSuccess = (LoginSuccessful)result;
             // Console.WriteLine(loginSuccess);
+        }
+        public static void Disconnect()
+        {
+            if (session.Socket.Connected){
+                session.Socket.DisconnectAsync();
+            }
         }
         private static void Items_ItemReceived(IReceivedItemsHelper helper)
         {

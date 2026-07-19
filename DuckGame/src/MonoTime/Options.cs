@@ -21,6 +21,7 @@ namespace DuckGame
         private static UIMenu _ttsMenu;
         private static UIMenu _blockMenu;
         private static UIMenu _controlsMenu;
+        private static UIMenu _archipelagoMenu;
         private static UIMenu _dgrOptimizationsMenu;
         private static UIMenu _dgrGraphicsMenu;
         private static UIMenu _dgrGameMenu;
@@ -36,7 +37,8 @@ namespace DuckGame
         public static UIMenu _lastCreatedAccessibilityMenu;
         public static UIMenu _lastCreatedTTSMenu;
         public static UIMenu _lastCreatedBlockMenu;
-        public static UIMenu _lastCreatedControlsMenu;
+        public static UIMenu _lastCreatedControlsMenu; 
+        public static UIMenu _lastCreatedArchipelagoMenu;
         public static UIMenu _lastCreatedDGRMenu;
         public static UIMenu _lastCreatedDGROptimizationsMenu;
         public static UIMenu _lastCreatedDGRGraphicsMenu;
@@ -104,6 +106,7 @@ namespace DuckGame
         public static bool menuOpen => _optionsMenu.open;
 
         public static UIMenu graphicsMenu => _graphicsMenu;
+        public static UIMenu archipelagoMenu => _archipelagoMenu;
 
         public static UIMenu audioMenu => _audioMenu;
 
@@ -133,6 +136,7 @@ namespace DuckGame
             to.Add(graphicsMenu, false);
             to.Add(audioMenu, false);
 
+            to.Add(InitArchipelagoMenu(archipelagoMenu, optionsMenu, to), false);
             to.Add(DGRMenu, false);
             to.Add(DGROptimizationsMenu, false);
             to.Add(DGRGraphicsMenu, false);
@@ -170,6 +174,9 @@ namespace DuckGame
         public static UIMenu CreateOptionsMenu()
         {
             UIMenu optionsMenu = new UIMenu("@WRENCH@OPTIONS@SCREWDRIVER@", Layer.HUD.camera.width / 2f, Layer.HUD.camera.height / 2f, 190f, conString: "@CANCEL@BACK @SELECT@SELECT");
+            _lastCreatedArchipelagoMenu = CreateArchipelagoMenu(optionsMenu);
+            optionsMenu.Add(new UIMenuItem("ARCHIPELAGO", new UIMenuActionOpenMenu(optionsMenu, _lastCreatedArchipelagoMenu), backButton: true));
+            optionsMenu.Add(new UIText(" ", Color.White), true);
             optionsMenu.Add(new UIMenuItemSlider("SFX Volume", field: new FieldBinding(Data, "sfxVolume"), step: 0.06666667f), true);
             optionsMenu.Add(new UIMenuItemSlider("Music Volume", field: new FieldBinding(Data, "musicVolume"), step: 0.06666667f), true);
             optionsMenu.Add(new UIMenuItemSlider("Rumble Intensity", field: new FieldBinding(Data, "rumbleIntensity"), step: 0.06666667f), true);
@@ -214,6 +221,7 @@ namespace DuckGame
             _controllerWarning = CreateControllerWarning();
             _DGRMenu = _lastCreatedDGRMenu;
             _controlsMenu = _lastCreatedControlsMenu;
+            _archipelagoMenu = _lastCreatedArchipelagoMenu;
             _graphicsMenu = _lastCreatedGraphicsMenu;
             _accessibilityMenu = _lastCreatedAccessibilityMenu;
             _audioMenu = _lastCreatedAudioMenu;
@@ -964,6 +972,57 @@ namespace DuckGame
         public static UIMenu tempDGRRecorderatorMenu;
         public static UIMenu tempDGRMiscMenu;
         public static UIMenu tempDGRDevMenu;
+        // public static UIStringEntryMenu userField;
+        public static UIMenuItemString slotNameString;
+        public static UIMenuItemString ipString;
+        public static UIMenuItemString portString;
+        public static UIMenuItemString passString;
+        public static UIMenu CreateArchipelagoMenu(UIMenu pOptionsMenu)
+        {
+            UIMenu menu = new UIMenu("@WRENCH@ARCHIPELAGO@SCREWDRIVER@", Layer.HUD.camera.width / 2f, Layer.HUD.camera.height / 2f, 240f, conString: "@CANCEL@BACK @SELECT@SELECT");
+
+            // UIComponent uiComponent = apMenu.AddMatchSetting(new MatchSetting()
+            // {
+            //     id = "name",
+            //     name = "Name",
+            //     value = "",
+            //     filtered = false,
+            //     filterOnly = false,
+            //     createOnly = true
+            // }, false);
+            // if (uiComponent != null && uiComponent is UIMenuItemString && uiComponent is UIMenuItemString uiMenuItemString)
+            //     uiMenuItemString.InitializeEntryMenu(main, apMenu);
+
+            
+            slotNameString = new UIMenuItemString("Slot Name","slot", field: new FieldBinding(typeof(ArchipelagoClient), "slot"));
+            // slotNameString.isEnabled = true;
+            menu.Add(slotNameString, true);
+            
+            ipString = new UIMenuItemString("Address","ip", field: new FieldBinding(typeof(ArchipelagoClient), "address"));
+            // ipString.isEnabled = true;
+            menu.Add(ipString, true);
+
+            portString = new UIMenuItemString("Port","port", field: new FieldBinding(typeof(ArchipelagoClient), "port"));
+            // portString.isEnabled = true;
+            menu.Add(portString, true);
+
+            passString = new UIMenuItemString("Password","pass", field: new FieldBinding(typeof(ArchipelagoClient), "pass"));
+            // passString.isEnabled = true;
+            menu.Add(passString, true);
+
+            menu.Add(new UIMenuItem("BACK", new UIMenuActionOpenMenu(menu, pOptionsMenu), backButton: true));
+            menu.Close();
+            menu.SetBackFunction(new UIMenuActionOpenMenu(menu, pOptionsMenu));
+            return menu;
+        }
+        public static UIMenu InitArchipelagoMenu(UIMenu apMenu, UIMenu pOptionsMenu, UIComponent main)
+        {
+            slotNameString.InitializeEntryMenu(main, apMenu);
+            ipString.InitializeEntryMenu(main, apMenu);
+            portString.InitializeEntryMenu(main, apMenu);
+            passString.InitializeEntryMenu(main, apMenu);
+            return apMenu;
+        }
         public static UIMenu CreateControlsMenu(UIMenu pOptionsMenu)
         {
             UIMenu menu = new UIControlConfig(pOptionsMenu, "@WRENCH@DEVICE DEFAULTS@SCREWDRIVER@", Layer.HUD.camera.width / 2f, Layer.HUD.camera.height / 2f, 194f, conString: "@WASD@@SELECT@ADJUST @CANCEL@BACK");

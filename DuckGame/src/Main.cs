@@ -204,7 +204,6 @@ namespace DuckGame
                 DiscordRichPresence.whenGameStarted = DateTime.UtcNow;
                 DiscordRichPresence.Initialize();
             }
-            ArchipelagoClient.Connect();
             ModLoader.Start();
         }
         protected override void OnUpdate()

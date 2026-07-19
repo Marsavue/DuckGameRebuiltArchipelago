@@ -135,6 +135,7 @@ namespace DuckGame
         }
         public TitleScreen(bool returnFromArcade, Profile arcadeProfile)
         {
+            if (returnFromArcade){ArchipelagoClient.Disconnect();}
             _centeredView = true;
             _returnFromArcade = returnFromArcade;
             _arcadeProfile = arcadeProfile;
