@@ -1,4 +1,4 @@
-# Duck Game Archipelago
+# Duck Game Arcade Archipelago
 This project is based off of Duck Game Rebuilt.
 Nothing I make is ever developed using AI, that does not necessarily include DGR
 
