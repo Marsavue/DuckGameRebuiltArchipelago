@@ -1,20 +1,15 @@
+# Duck Game Archipelago
+This project is based off of Duck Game Rebuilt.
+Nothing I make is ever developed using AI, that does not necessarily include DGR
+
+## As of v0.0.1
+- Levels and Weapons are checks
+- Locations are Silver and Gold medals
+- Nothing yet configurable by yaml
+
 # <img src="icon.png" height="32"> Duck Game Rebuilt
 
 Duck Game Rebuilt is a decompilation of Duck Game with massive improvements to performance, compatibility, and quality of life features.
-
-> [!TIP]
-> Join [our Discord server](https://discord.gg/XkAjt744hz) if you have any questions, need help, or want to report bugs.
-
-Notable wiki pages:
-
-- [Frequently Asked Questions](https://github.com/TheFlyingFoool/DuckGameRebuilt/wiki/FAQ)
-- [A list of all improvements to Duck Game Rebuilt](https://github.com/TheFlyingFoool/DuckGameRebuilt/wiki/Changelog)
-- [Hardware and software compatibility](https://github.com/TheFlyingFoool/DuckGameRebuilt/wiki/Architectures-and-Devices)
-
-## Installation 📥
-
-- **Windows** — subscribe to [the Steam Workshop mod](https://steamcommunity.com/sharedfiles/filedetails/?id=3132351890).
-- **Linux** — follow the [Linux Installation Guide](https://github.com/TheFlyingFoool/DuckGameRebuilt/wiki/Linux-Installation-Guide).
 
 ## For Developers 🚧
 
@@ -75,14 +70,3 @@ git submodule update --init --recursive
   ```bash
   mono ./bin/DuckGame.exe
   ```
-
-## Contributing
-
-Pull requests are welcome. The usual workflow:
-
-1. Fork this repo on GitHub.
-2. Create a feature branch — `fix/<topic>`, `feat/<topic>`, or `docs/<topic>` matches the naming convention recent merged PRs use.
-3. Commit with a `Feat:` / `Fix:` / `Docs:` prefix in the message subject.
-4. Open a PR against `master`.
-
-For end-user questions or help, see the [wiki FAQ](https://github.com/TheFlyingFoool/DuckGameRebuilt/wiki/FAQ) or hop into the [Discord](https://discord.gg/XkAjt744hz).
