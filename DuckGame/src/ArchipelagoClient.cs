@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Web.ModelBinding;
 using System.Windows.Forms;
 using Archipelago.MultiClient.Net;
@@ -128,16 +129,23 @@ namespace DuckGame
         public static string port = "38281";
         public static string pass = "";
 
+        private static List<string> unlockQueue = new List<string>();
+        private static bool unlockQueueActive = true;
+
         public static void Connect()
         {
             availableLevels.Clear();
             availableItems.Clear();
+            unlockQueue.Clear();
+            unlockQueueActive = true;
             bool success = int.TryParse(port, out int portNum);
             if (!success){
                 return;
             }
             session = ArchipelagoSessionFactory.CreateSession(address, portNum);
-            session.Items.ItemReceived += Items_ItemReceived;
+            session.Items.ItemReceived += ItemsItemReceived;
+            session.Socket.SocketClosed += SessionSocketClosed;
+            session.Socket.ErrorReceived += SessionErrorReceived;
 
             LoginResult result;
 
@@ -153,6 +161,7 @@ namespace DuckGame
 
             if (!result.Successful)
             {
+                HUD.AddInputChangeDisplay("@UNPLUG@|RED|Could not connect to AP");
                 LoginFailure failure = (LoginFailure)result;
                 string errorMessage = $"Failed to Connect to {address} as {slot}:";
                 foreach (string error in failure.Errors)
@@ -166,6 +175,8 @@ namespace DuckGame
 
                 return; // Did not connect, show the user the contents of `errorMessage`
             }
+            HUD.AddInputChangeDisplay("@PLUG@|LIME|AP Connected");
+            new Task(() => { System.Threading.Thread.Sleep(1000);ProcessUnlockQueue();}).Start();
             
             // Successfully connected, `ArchipelagoSession` (assume statically defined as `session` from now on) can now be
             // used to interact with the server and the returned `LoginSuccessful` contains some useful information about the
@@ -175,21 +186,50 @@ namespace DuckGame
         }
         public static void Disconnect()
         {
+            availableLevels.Clear();
+            availableItems.Clear();
+            unlockQueue.Clear();
             if (session.Socket.Connected){
-                session.Socket.DisconnectAsync();
+                session?.Socket.DisconnectAsync();
             }
+            HUD.AddInputChangeDisplay("@UNPLUG@|RED|AP Disconnected");
         }
-        private static void Items_ItemReceived(IReceivedItemsHelper helper)
+        private static void ItemsItemReceived(IReceivedItemsHelper helper)
         {
             var newItem = helper.DequeueItem();
-            var item_name = newItem.ItemName;
-            if (item_name != "Filler"){
-                if (name2level.Keys.Contains(item_name)&&!availableLevels.Contains(name2level[item_name])){
-                    availableLevels.Add(name2level[item_name]);
-                }else if (name2item.Keys.Contains(item_name)&&!availableItems.Contains(name2item[item_name])){
-                    availableItems.Add(name2item[item_name]);
+            string itemName = newItem.ItemName;
+            if (itemName != "Filler"){
+                if (name2level.Keys.Contains(itemName)&&!availableLevels.Contains(name2level[itemName])){
+                    availableLevels.Add(name2level[itemName]);
+                }else if (name2item.Keys.Contains(itemName)&&!availableItems.Contains(name2item[itemName])){
+                    availableItems.Add(name2item[itemName]);
                 }
+                unlockQueue.Add(itemName);
+                if (!unlockQueueActive){new Task(() => {ProcessUnlockQueue();}).Start();}
             }
+            
+        }
+        private static void ProcessUnlockQueue(){
+            if (unlockQueue.Count > 0){
+                unlockQueueActive = true;
+                System.Threading.Thread.Sleep(500);
+                if (unlockQueue.Count > 0){
+                    string itemName = unlockQueue[0];
+                    unlockQueue.RemoveAt(0);
+                    HUD.AddInputChangeDisplay("|LIME|Recv: "+itemName+" ");
+                    ProcessUnlockQueue();
+                }
+                return;
+            }
+            unlockQueueActive = false;
+            return;
+        }
+
+        private static void SessionSocketClosed(string reason){
+            Disconnect();
+        }
+        private static void SessionErrorReceived(Exception e, string message){
+            Disconnect();
         }
         public static bool LevelExists(string level){
             return availableLevels.Contains(level);
@@ -199,8 +239,12 @@ namespace DuckGame
         }
         public static void SendItem(string level,string medal){
             var loc = session.Locations.GetLocationIdFromName("DuckGame",level2name[level]+" "+medal);
-            if (session.Locations.AllLocationsChecked.Count >= name2level.Count*2){session.SetGoalAchieved();}
+            if (session.Locations.AllLocationsChecked.Count >= name2level.Count*2){
+                session.SetGoalAchieved();
+                HUD.AddInputChangeDisplay("|LIME| GAME IS BEATEN YAYAY <333 ");}
             if (loc == -1){return;}
+            // session.Locations.ScoutLocationsAsync(loc).ContinueWith(t => Console.WriteLine(t.Result));
+            HUD.AddInputChangeDisplay(" |LIME|Sent: "+session.Locations.ScoutLocationsAsync(loc)+" ");
             session.Locations.CompleteLocationChecksAsync(loc);
         }
     }
