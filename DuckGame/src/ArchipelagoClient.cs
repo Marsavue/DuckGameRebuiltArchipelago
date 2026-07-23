@@ -11,6 +11,7 @@ using System.Windows.Forms;
 using Archipelago.MultiClient.Net;
 using Archipelago.MultiClient.Net.Enums;
 using Archipelago.MultiClient.Net.Helpers;
+using Archipelago.MultiClient.Net.Models;
 using HarmonyLib;
 
 namespace DuckGame
@@ -121,6 +122,13 @@ namespace DuckGame
         //     {typeof(Grapple),"Grapple"},
         //     {typeof(Boots),"Boots"},
         // };
+        private static readonly Dictionary<string,int> medalOrder = new Dictionary<string, int>{
+            {"Bronze",1},
+            {"Silver",2},
+            {"Gold",3},
+            {"Platinum",4},
+            {"Developer",5},
+        };
         private static ArchipelagoSession session;
         private static List<string> availableLevels = new List<string>();
         private static List<Type> availableItems = new List<Type>();
@@ -128,55 +136,56 @@ namespace DuckGame
         public static string address = "archipelago.gg";
         public static string port = "38281";
         public static string pass = "";
+        private class PopupQueueData {
+            public string itemName;
+            public bool itemReceived;
+            public PopupQueueData(string name, bool received){
+                itemName = name;
+                itemReceived = received;
+            }
+        }
 
-        private static List<string> unlockQueue = new List<string>();
-        private static bool unlockQueueActive = true;
+        private static List<PopupQueueData> popupQueue = new List<PopupQueueData>();
+        private static bool popupQueueActive = true;
 
-        public static void Connect()
-        {
+        public static void Connect(){
             availableLevels.Clear();
             availableItems.Clear();
-            unlockQueue.Clear();
-            unlockQueueActive = true;
+            popupQueue.Clear();
+            popupQueueActive = true;
             bool success = int.TryParse(port, out int portNum);
             if (!success){
                 return;
             }
             session = ArchipelagoSessionFactory.CreateSession(address, portNum);
-            session.Items.ItemReceived += ItemsItemReceived;
+            session.Items.ItemReceived += ItemReceived;
             session.Socket.SocketClosed += SessionSocketClosed;
             session.Socket.ErrorReceived += SessionErrorReceived;
 
             LoginResult result;
 
-            try
-            {
+            try{
                 // handle TryConnectAndLogin attempt here and save the returned object to `result`
                 result = session.TryConnectAndLogin("DuckGame", slot, ItemsHandlingFlags.AllItems,null,null,null,pass,true);
             }
-            catch (Exception e)
-            {
+            catch (Exception e){
                 result = new LoginFailure(e.GetBaseException().Message);
             }
-
-            if (!result.Successful)
-            {
+            if (!result.Successful){
                 HUD.AddInputChangeDisplay("@UNPLUG@|RED|Could not connect to AP");
                 LoginFailure failure = (LoginFailure)result;
                 string errorMessage = $"Failed to Connect to {address} as {slot}:";
-                foreach (string error in failure.Errors)
-                {
+                foreach (string error in failure.Errors){
                     errorMessage += $"\n    {error}";
                 }
-                foreach (ConnectionRefusedError error in failure.ErrorCodes)
-                {
+                foreach (ConnectionRefusedError error in failure.ErrorCodes){
                     errorMessage += $"\n    {error}";
                 }
 
                 return; // Did not connect, show the user the contents of `errorMessage`
             }
             HUD.AddInputChangeDisplay("@PLUG@|LIME|AP Connected");
-            new Task(() => { System.Threading.Thread.Sleep(1000);ProcessUnlockQueue();}).Start();
+            new Task(() => { System.Threading.Thread.Sleep(1000);ProcessPopupQueue();}).Start();
             
             // Successfully connected, `ArchipelagoSession` (assume statically defined as `session` from now on) can now be
             // used to interact with the server and the returned `LoginSuccessful` contains some useful information about the
@@ -184,19 +193,22 @@ namespace DuckGame
             var loginSuccess = (LoginSuccessful)result;
             // Console.WriteLine(loginSuccess);
         }
-        public static void Disconnect()
-        {
-            availableLevels.Clear();
-            availableItems.Clear();
-            unlockQueue.Clear();
+        public static void Disconnect(){
             if (session.Socket.Connected){
                 session?.Socket.DisconnectAsync();
             }
+            availableLevels.Clear();
+            availableItems.Clear();
+            popupQueue.Clear();
             HUD.AddInputChangeDisplay("@UNPLUG@|RED|AP Disconnected");
         }
-        private static void ItemsItemReceived(IReceivedItemsHelper helper)
-        {
-            var newItem = helper.DequeueItem();
+        public static void CheckConnection(){
+            if (!session.Socket.Connected){
+                HUD.AddInputChangeDisplay("@UNPLUG@|RED|AP Disconnected");
+            }
+        }
+        private static void ItemReceived(IReceivedItemsHelper helper){
+            ItemInfo newItem = helper.DequeueItem();
             string itemName = newItem.ItemName;
             if (itemName != "Filler"){
                 if (name2level.Keys.Contains(itemName)&&!availableLevels.Contains(name2level[itemName])){
@@ -204,24 +216,27 @@ namespace DuckGame
                 }else if (name2item.Keys.Contains(itemName)&&!availableItems.Contains(name2item[itemName])){
                     availableItems.Add(name2item[itemName]);
                 }
-                unlockQueue.Add(itemName);
-                if (!unlockQueueActive){new Task(() => {ProcessUnlockQueue();}).Start();}
+                popupQueue.Add(new PopupQueueData(itemName,true));
+                if (!popupQueueActive){new Task(() => {ProcessPopupQueue();}).Start();}
             }
-            
         }
-        private static void ProcessUnlockQueue(){
-            if (unlockQueue.Count > 0){
-                unlockQueueActive = true;
-                System.Threading.Thread.Sleep(500);
-                if (unlockQueue.Count > 0){
-                    string itemName = unlockQueue[0];
-                    unlockQueue.RemoveAt(0);
-                    HUD.AddInputChangeDisplay("|LIME|Recv: "+itemName+" ");
-                    ProcessUnlockQueue();
+        private static void ProcessPopupQueue(){
+            if (popupQueue.Count > 0){
+                popupQueueActive = true;
+                System.Threading.Thread.Sleep(750);
+                if (popupQueue.Count > 0){
+                    PopupQueueData item = popupQueue[0];
+                    popupQueue.RemoveAt(0);
+                    string displayText = " |LIME|";
+                    if (item.itemReceived){displayText += "Recv: ";}
+                    else{displayText += "Sent: ";}
+                    displayText+=item.itemName;
+                    HUD.AddInputChangeDisplay(displayText+" ");
+                    ProcessPopupQueue();
                 }
                 return;
             }
-            unlockQueueActive = false;
+            popupQueueActive = false;
             return;
         }
 
@@ -232,20 +247,43 @@ namespace DuckGame
             Disconnect();
         }
         public static bool LevelExists(string level){
-            return availableLevels.Contains(level);
+            CheckConnection();
+            if (level2name.Keys.Contains(level)){return availableLevels.Contains(level);}
+            return true;
         }
         public static bool ItemExists(Thing item){
-            return availableItems.Contains(item.GetType());
+            CheckConnection();
+            if (name2item.Values.Contains(item.GetType())){return availableItems.Contains(item.GetType());}
+            return true;
         }
-        public static void SendItem(string level,string medal){
-            var loc = session.Locations.GetLocationIdFromName("DuckGame",level2name[level]+" "+medal);
-            if (session.Locations.AllLocationsChecked.Count >= name2level.Count*2){
-                session.SetGoalAchieved();
-                HUD.AddInputChangeDisplay("|LIME| GAME IS BEATEN YAYAY <333 ");}
-            if (loc == -1){return;}
-            // session.Locations.ScoutLocationsAsync(loc).ContinueWith(t => Console.WriteLine(t.Result));
-            HUD.AddInputChangeDisplay(" |LIME|Sent: "+session.Locations.ScoutLocationsAsync(loc)+" ");
-            session.Locations.CompleteLocationChecksAsync(loc);
+        public static TrophyType GetBestTrophy(string level){
+            foreach(string medal in medalOrder.Keys.Reverse()){
+                if (session.Locations.AllLocationsChecked.Contains(session.Locations.GetLocationIdFromName("DuckGame",level2name[level]+" "+medal))){
+                    return (TrophyType)medalOrder[medal];
+                }
+            }
+            return TrophyType.Baseline;
+        }
+        public static void SendItem(string level,string wonMedal){
+            List<long> locations = new List<long>();
+            foreach (string medal in medalOrder.Keys.ToList().GetRange(0,medalOrder[wonMedal])){
+                long loc = session.Locations.GetLocationIdFromName("DuckGame",level2name[level]+" "+medal);
+                if (session.Locations.AllLocationsChecked.Count >= name2level.Count*2){
+                    session.SetGoalAchieved();
+                    HUD.AddInputChangeDisplay(" |LIME| GAME IS BEATEN YAYAY <333 ");}
+                if (loc == -1 || session.Locations.AllLocationsChecked.Contains(loc)){continue;}
+                locations.Add(loc);
+            }
+            if (locations.Count > 0){
+                new Task(() => {session.Locations.ScoutLocationsAsync(locations.ToArray()).ContinueWith(t => DisplaySentItem(t.Result));}).Start();
+                session.Locations.CompleteLocationChecksAsync(locations.ToArray());
+            }
+        }
+        private static void DisplaySentItem(Dictionary<long, ScoutedItemInfo> packet){
+            foreach(ScoutedItemInfo item in packet.Values){
+                popupQueue.Add(new PopupQueueData(item.ItemName,false));
+            }
+            if (!popupQueueActive){new Task(() => {ProcessPopupQueue();}).Start();}
         }
     }
 }

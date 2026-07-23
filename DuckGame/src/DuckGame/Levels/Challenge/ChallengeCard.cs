@@ -46,6 +46,7 @@ namespace DuckGame
             if (_challenge != null)
             {
                 _realSave = Profiles.active[0].GetSaveData(_challenge.levelID);
+                _realSave.trophy = ArchipelagoClient.GetBestTrophy(_challenge.levelID);
                 _save = _realSave.Clone();
             }
             else

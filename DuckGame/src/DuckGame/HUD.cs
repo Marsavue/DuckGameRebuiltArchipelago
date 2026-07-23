@@ -358,7 +358,7 @@ namespace DuckGame
                 Vec2 vec2_3 = vec2_1;
                 vec2_2.x -= stringWidth / 2f;
                 vec2_3.x -= stringWidth / 2f;
-                float num3 = Layer.HUD.camera.width / 32f + num1;
+                float num3 = Layer.HUD.camera.width / 12f + num1;
                 Vec2 vec2_4 = Vec2.Zero;
                 vec2_4 = new Vec2(0f, -num3);
                 Graphics.DrawRect(vec2_3 + vec2_4 * inputChangeDisplay.slide, vec2_3 + new Vec2(x, num1 - 1f) + vec2_4 * inputChangeDisplay.slide, Color.Black, (Depth)0.95f);
