@@ -63,6 +63,8 @@ namespace DuckGame
 
         public override void Initialize()
         {
+            if (helmet){helmet = ArchipelagoClient.ItemExists(new Helmet(0,0));}
+            if (chestPlate){chestPlate = ArchipelagoClient.ItemExists(new ChestPlate(0,0));}
             _profile = Profiles.EnvironmentProfile;
             InitProfile();
             _sprite = new SpriteMap("woodDuck", 32, 32);

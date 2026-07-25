@@ -185,7 +185,7 @@ namespace DuckGame
                 return; // Did not connect, show the user the contents of `errorMessage`
             }
             HUD.AddInputChangeDisplay("@PLUG@|LIME|AP Connected");
-            new Task(() => { System.Threading.Thread.Sleep(1000);ProcessPopupQueue();}).Start();
+            new Task(() => { System.Threading.Thread.Sleep(1000);ProcessPopupQueue(true);}).Start();
             
             // Successfully connected, `ArchipelagoSession` (assume statically defined as `session` from now on) can now be
             // used to interact with the server and the returned `LoginSuccessful` contains some useful information about the
@@ -220,10 +220,11 @@ namespace DuckGame
                 if (!popupQueueActive){new Task(() => {ProcessPopupQueue();}).Start();}
             }
         }
-        private static void ProcessPopupQueue(){
+        private static void ProcessPopupQueue(bool first = false){
             if (popupQueue.Count > 0){
                 popupQueueActive = true;
-                System.Threading.Thread.Sleep(750);
+                if (first){System.Threading.Thread.Sleep(500);}
+                else{System.Threading.Thread.Sleep(1000);}
                 if (popupQueue.Count > 0){
                     PopupQueueData item = popupQueue[0];
                     popupQueue.RemoveAt(0);
@@ -232,7 +233,7 @@ namespace DuckGame
                     else{displayText += "Sent: ";}
                     displayText+=item.itemName;
                     HUD.AddInputChangeDisplay(displayText+" ");
-                    ProcessPopupQueue();
+                    ProcessPopupQueue(first);
                 }
                 return;
             }
