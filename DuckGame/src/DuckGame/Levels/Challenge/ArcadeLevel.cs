@@ -751,18 +751,19 @@ namespace DuckGame
                                 ChallengeData challenge2 = Challenges.GetChallenge(challenge1);
                                 if (challenge2 != null)
                                 {
-                                    ChallengeSaveData saveData = _duck.profile.GetSaveData(challenge2.levelID);
-                                    if (saveData.trophy == TrophyType.Baseline)
+                                    // ChallengeSaveData saveData = _duck.profile.GetSaveData(challenge2.levelID);
+                                    TrophyType challenge2trophy = ArchipelagoClient.GetBestTrophy(challenge2.levelID);
+                                    if (challenge2trophy == TrophyType.Baseline)
                                         text += "@BASELINE@";
-                                    else if (saveData.trophy == TrophyType.Bronze)
+                                    else if (challenge2trophy == TrophyType.Bronze)
                                         text += "@BRONZE@";
-                                    else if (saveData.trophy == TrophyType.Silver)
+                                    else if (challenge2trophy == TrophyType.Silver)
                                         text += "@SILVER@";
-                                    else if (saveData.trophy == TrophyType.Gold)
+                                    else if (challenge2trophy == TrophyType.Gold)
                                         text += "@GOLD@";
-                                    else if (saveData.trophy == TrophyType.Platinum)
+                                    else if (challenge2trophy == TrophyType.Platinum)
                                         text += "@PLATINUM@";
-                                    else if (saveData.trophy == TrophyType.Developer)
+                                    else if (challenge2trophy == TrophyType.Developer)
                                         text += "@DEVELOPER@";
                                 }
                             }

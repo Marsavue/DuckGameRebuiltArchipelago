@@ -136,23 +136,39 @@ namespace DuckGame
         public static string address = "archipelago.gg";
         public static string port = "38281";
         public static string pass = "";
+        private static bool popupQueueActive = true;
+        private static List<PopupQueueData> popupQueue = new List<PopupQueueData>();
         private class PopupQueueData {
             public string itemName;
             public bool itemReceived;
-            public PopupQueueData(string name, bool received){
+            public string itemClass;
+            public PopupQueueData(string name, bool received, ItemFlags iclass){
                 itemName = name;
                 itemReceived = received;
+                if (iclass == ItemFlags.Advancement){itemClass="|PURPLE|";}
+                else if (iclass == ItemFlags.NeverExclude){itemClass="|BLUE|";}
+                else if (iclass == ItemFlags.None){itemClass="|AQUA|";}
+                else if (iclass == ItemFlags.Trap){itemClass="|RED|";}
             }
         }
-
-        private static List<PopupQueueData> popupQueue = new List<PopupQueueData>();
-        private static bool popupQueueActive = true;
+        private static SlotData slotData;
+        private class SlotData {
+            public long medalCountGoal;
+            public bool sendLowerMedals;
+            public List<string> enabledMedals;
+            public SlotData(long medalCount=150, bool lowerMedals=true, List<string>enabledMedalsNew=null){
+                medalCountGoal = medalCount;
+                sendLowerMedals = lowerMedals;
+                enabledMedals = enabledMedalsNew;
+            }
+        }
 
         public static void Connect(){
             availableLevels.Clear();
             availableItems.Clear();
             popupQueue.Clear();
             popupQueueActive = true;
+            slotData = new SlotData();
             bool success = int.TryParse(port, out int portNum);
             if (!success){
                 return;
@@ -184,14 +200,17 @@ namespace DuckGame
 
                 return; // Did not connect, show the user the contents of `errorMessage`
             }
+            LoginSuccessful loginSuccess = (LoginSuccessful)result;
+            List<string> enabledMedals = new List<string>(){}; 
+            foreach(string medal in medalOrder.Keys){
+                if ((long)loginSuccess.SlotData["use_"+medal.ToLower()+"_medal"]!=0){
+                    enabledMedals.Add(medal);
+                }
+            }
+            slotData = new SlotData((long)loginSuccess.SlotData["medal_count_goal"],(long)loginSuccess.SlotData["send_lower_medals"]!=0,enabledMedals);
             HUD.AddInputChangeDisplay("@PLUG@|LIME|AP Connected");
             new Task(() => { System.Threading.Thread.Sleep(1000);ProcessPopupQueue(true);}).Start();
-            
-            // Successfully connected, `ArchipelagoSession` (assume statically defined as `session` from now on) can now be
-            // used to interact with the server and the returned `LoginSuccessful` contains some useful information about the
-            // initial connection (e.g. a copy of the slot data as `loginSuccess.SlotData`)
-            var loginSuccess = (LoginSuccessful)result;
-            // Console.WriteLine(loginSuccess);
+            CheckIfGoaled();
         }
         public static void Disconnect(){
             if (session.Socket.Connected){
@@ -216,7 +235,7 @@ namespace DuckGame
                 }else if (name2item.Keys.Contains(itemName)&&!availableItems.Contains(name2item[itemName])){
                     availableItems.Add(name2item[itemName]);
                 }
-                popupQueue.Add(new PopupQueueData(itemName,true));
+                popupQueue.Add(new PopupQueueData(itemName,true,newItem.Flags));
                 if (!popupQueueActive){new Task(() => {ProcessPopupQueue();}).Start();}
             }
         }
@@ -228,9 +247,10 @@ namespace DuckGame
                 if (popupQueue.Count > 0){
                     PopupQueueData item = popupQueue[0];
                     popupQueue.RemoveAt(0);
-                    string displayText = " |LIME|";
+                    string displayText = " ";
                     if (item.itemReceived){displayText += "Recv: ";}
                     else{displayText += "Sent: ";}
+                    displayText+=item.itemClass;
                     displayText+=item.itemName;
                     HUD.AddInputChangeDisplay(displayText+" ");
                     ProcessPopupQueue(first);
@@ -258,31 +278,54 @@ namespace DuckGame
             return true;
         }
         public static TrophyType GetBestTrophy(string level){
-            foreach(string medal in medalOrder.Keys.Reverse()){
-                if (session.Locations.AllLocationsChecked.Contains(session.Locations.GetLocationIdFromName("DuckGame",level2name[level]+" "+medal))){
-                    return (TrophyType)medalOrder[medal];
+            TrophyType highestMedal = TrophyType.Baseline;
+            foreach(string medal in slotData.enabledMedals){
+                if (session.Locations.AllLocationsChecked.Contains(session.Locations.GetLocationIdFromName("DuckGame",level2name[level]+" "+medal+" Medal"))){
+                    highestMedal=(TrophyType)medalOrder[medal];
+                }else{
+                    return highestMedal;
                 }
             }
-            return TrophyType.Baseline;
+            return highestMedal;
+        }
+        private static bool CheckIfGoaled(int extra=0){
+            if (session.Locations.AllLocationsChecked.Count+extra >= slotData.medalCountGoal){
+                session.SetGoalAchieved();
+                popupQueue.Clear();
+                HUD.AddInputChangeDisplay(" |LIME| GAME IS BEATEN YAYAY <333 ");
+                return true;
+            }
+            return false;
         }
         public static void SendItem(string level,string wonMedal){
+            if (CheckIfGoaled()){return;}
             List<long> locations = new List<long>();
-            foreach (string medal in medalOrder.Keys.ToList().GetRange(0,medalOrder[wonMedal])){
-                long loc = session.Locations.GetLocationIdFromName("DuckGame",level2name[level]+" "+medal);
-                if (session.Locations.AllLocationsChecked.Count >= name2level.Count*2){
-                    session.SetGoalAchieved();
-                    HUD.AddInputChangeDisplay(" |LIME| GAME IS BEATEN YAYAY <333 ");}
-                if (loc == -1 || session.Locations.AllLocationsChecked.Contains(loc)){continue;}
-                locations.Add(loc);
+            if (slotData.sendLowerMedals){
+                foreach (string medal in medalOrder.Keys.ToList().GetRange(0,medalOrder[wonMedal])){
+                    if (slotData.enabledMedals.Contains(medal)){
+                        long loc = session.Locations.GetLocationIdFromName("DuckGame",level2name[level]+" "+medal+" Medal");
+                        if (loc == -1 || session.Locations.AllLocationsChecked.Contains(loc)){continue;}
+                        locations.Add(loc);
+                    }
+                }
+            }else{
+                if (slotData.enabledMedals.Contains(wonMedal)){
+                    long loc = session.Locations.GetLocationIdFromName("DuckGame",level2name[level]+" "+wonMedal+" Medal");
+                    if (loc == -1 || session.Locations.AllLocationsChecked.Contains(loc)){return;}
+                    locations.Add(loc);
+                }
             }
             if (locations.Count > 0){
-                new Task(() => {session.Locations.ScoutLocationsAsync(locations.ToArray()).ContinueWith(t => DisplaySentItem(t.Result));}).Start();
-                session.Locations.CompleteLocationChecksAsync(locations.ToArray());
+                if (CheckIfGoaled(locations.Count)){return;
+                }else{
+                    new Task(() => {session.Locations.ScoutLocationsAsync(locations.ToArray()).ContinueWith(t => DisplaySentItem(t.Result));}).Start();
+                    session.Locations.CompleteLocationChecksAsync(locations.ToArray());
+                }
             }
         }
         private static void DisplaySentItem(Dictionary<long, ScoutedItemInfo> packet){
             foreach(ScoutedItemInfo item in packet.Values){
-                popupQueue.Add(new PopupQueueData(item.ItemName,false));
+                popupQueue.Add(new PopupQueueData(item.ItemName,false,item.Flags));
             }
             if (!popupQueueActive){new Task(() => {ProcessPopupQueue();}).Start();}
         }
