@@ -2,10 +2,12 @@
 This project is based off of Duck Game Rebuilt.
 Nothing I make is ever developed using AI, that does not necessarily include Duck Game Rebuilt
 
-## As of v0.0.1
-- Levels and Weapons are checks
-- Locations are Silver and Gold medals
-- Nothing yet configurable by yaml
+## As of v0.0.4
+- Levels and Weapons are items you can receive
+- Locations are medals of your choice
+- Several simple yaml options
+
+APWorld - https://github.com/Marsavue/Archipelago-DuckGame/releases
 
 [Check pins in the Archipelago discord for more info](https://discord.com/channels/731205301247803413/1526871890226974750)
 
