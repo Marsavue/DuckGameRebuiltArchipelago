@@ -7,9 +7,9 @@ namespace DuckGame
 {
     public static class Cloud
     {
-        public static bool uploadEnabled = true;
-        public static bool downloadEnabled = true;
-        public static bool nocloud;
+        public static bool uploadEnabled = false;
+        public static bool downloadEnabled = false;
+        public static bool nocloud = true;
         public static HashSet<string> deletedFiles = new HashSet<string>();
         private static Dictionary<string, DateTime> _indexTable = new Dictionary<string, DateTime>();
         private static Queue<CloudOperation> _operations = new Queue<CloudOperation>();

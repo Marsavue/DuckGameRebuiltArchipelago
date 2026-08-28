@@ -780,7 +780,7 @@ namespace DuckGame
             //surely i wont forget to remove this if i am to push something to the github right? 
             //im still adding an #if debug just in case -Lucky
 #if DEBUG
-            DiscordRichPresence.noRPC = true;
+            DiscordRichPresence.noRPC = false;
 #endif
             try
             {

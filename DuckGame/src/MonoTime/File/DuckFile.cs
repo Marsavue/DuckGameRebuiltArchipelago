@@ -222,45 +222,10 @@ namespace DuckGame
 
         public static void Initialize()
         {
-            _saveDirectory = "DuckGame/";
+            _saveDirectory = "DuckGameAP/";
             bool flag = true;
             string oldSaveLocation = DuckFile.oldSaveLocation;
             _saveRoot = newSaveLocation;
-            if (!DirectoryExists(_saveRoot + _saveDirectory) && !Program.alternateSaveLocation && DirectoryExists(oldSaveLocation + _saveDirectory))
-            {
-                _saveRoot = oldSaveLocation;
-                flag = false;
-                appdataSave = false;
-            }
-            if (flag)
-            {
-                appdataSave = true;
-                try
-                {
-                    string str1 = oldSaveLocation + _saveDirectory;
-                    if (Program.alternateSaveLocation && DirectoryExists(str1) && !DirectoryExists(saveDirectory))
-                        DirectoryCopy(str1, saveDirectory, true);
-                    string path = str1 + "where_is_my_save.txt";
-                    if (!File.Exists(path))
-                    {
-                        CreatePath(str1);
-                        Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-                        using (StreamWriter streamWriter = new StreamWriter(str1 + "Save Data.url"))
-                        {
-                            string location = Assembly.GetExecutingAssembly().Location;
-                            streamWriter.WriteLine("[InternetShortcut]");
-                            streamWriter.WriteLine("URL=file:///" + saveDirectory);
-                            streamWriter.WriteLine("IconIndex=0");
-                            string str2 = location.Replace('\\', '/');
-                            streamWriter.WriteLine("IconFile=" + str2);
-                        }
-                        File.WriteAllText(path, "Hey! Keeping save data in the Documents folder was causing all kinds\nof issues for people, and it's with great sadness that I had to move your data.\nDon't worry, it still exists- your data is now located here:\n\n" + saveDirectory + "\n\nAny save data still located in this folder is for the old version (pre-2020) of Duck Game.");
-                    }
-                }
-                catch (Exception)
-                {
-                }
-            }
             DevConsole.Log(DCSection.General, "DuckFile.Initialize().. " + (_saveRoot.Contains("OneDrive/") ? "Ah, a |DGBLUE|OneDrive|WHITE| user, I see.." : ""));
             if (!DirectoryExists(saveDirectory))
                 freshInstall = true;
@@ -1051,11 +1016,8 @@ namespace DuckGame
         public static DuckXML LoadDuckXML(string path)
         {
             Cloud.ReplaceLocalFileWithCloudFile(path);
-            // FOR TESTING SO WE DON'T LOAD SAVES
-            return null;
-
-            // if (!File.Exists(path))
-            //     return null;
+            if (!File.Exists(path))
+                return null;
             if (MonoMain.logFileOperations)
                 DevConsole.Log(DCSection.General, "DuckFile.LoadDuckXML(" + path + ")");
             DuckXML duckXml = null;
@@ -1071,7 +1033,6 @@ namespace DuckGame
 
         public static void SaveDuckXML(DuckXML doc, string path)
         {
-            return;
             if (Program.IsLanTestUser) return;
             path = PreparePath(path, true);
             string docString = doc.ToString();
