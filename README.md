@@ -3,6 +3,7 @@ This project is based off of Duck Game Rebuilt.
 Nothing I make is ever developed using AI, that does not necessarily include Duck Game Rebuilt
 
 ## Guide
+You MUST own the game on steam and it MUST be open
 1. Download latest version from [Releases](https://github.com/Marsavue/DuckGameRebuiltArchipelago/releases/latest) & unzip
 2. Windows run DuckGame.exe - Linux run DuckGame.sh (need mono installed)
 3. Once game is open, configure slot settings in Pause>Options>Archipelago
