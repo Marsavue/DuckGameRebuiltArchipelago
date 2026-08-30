@@ -123,11 +123,11 @@ namespace DuckGame
             set => _backgroundColor = value;
         }
 
-        public static void Add(Thing thing)
+        public static void Add(Thing thing,bool apForce=false)
         {
             if (_core.currentLevel == null || thing == null)
                 return;
-            _core.currentLevel.AddThing(thing);
+            _core.currentLevel.AddThing(thing,apForce);
         }
 
         public static void Remove(Thing thing)
@@ -285,9 +285,9 @@ namespace DuckGame
 
         public virtual void Terminate() => Clear();
 
-        public virtual void AddThing(Thing t)
+        public virtual void AddThing(Thing t,bool apForce=false)
         {
-            if ((t is Holdable || t is Equipment) && t is not RagdollPart){
+            if ((t is Holdable || t is Equipment) && t is not RagdollPart && !apForce){
                 if (!ArchipelagoClient.ItemExists(t)) return;}
             if (Corderator.instance != null && !Recorderator.Playing && Corderator.instance.cFrame > 0 && t.shouldhavevessel)
             {

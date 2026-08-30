@@ -297,6 +297,9 @@ namespace DuckGame
         public int waitGhost;
         private ConnectionIndicators _indicators;
         private bool _protectedFromFire;
+
+        public int moveReverse = 1;
+
         public override bool destroyed => _destroyed || forceDead;
 
         public Interp DuckLerp = new Interp { };
@@ -3009,7 +3012,7 @@ namespace DuckGame
                         leftMul *= 1.5f;
                         rightMul *= 1.5f;
                     }
-                    if (DevConsole.qwopMode && Level.current is GameLevel)
+                    if (DevConsole.qwopMode && (Level.current is GameLevel || Level.current is ChallengeLevel))
                     {
                         if (leftMul > 0f)
                             offDir = -1;
@@ -3039,7 +3042,7 @@ namespace DuckGame
                             else
                             {
                                 _walkCount += 20;
-                                if (DevConsole.rhythmMode && Level.current is GameLevel)
+                                if (DevConsole.rhythmMode && (Level.current is GameLevel || Level.current is ChallengeLevel))
                                     _walkTime += 20;
                                 else
                                     _walkTime += 8;
@@ -3060,7 +3063,7 @@ namespace DuckGame
                             else
                             {
                                 _walkCount += 20;
-                                if (DevConsole.rhythmMode && Level.current is GameLevel)
+                                if (DevConsole.rhythmMode && (Level.current is GameLevel || Level.current is ChallengeLevel))
                                     _walkTime += 20;
                                 else
                                     _walkTime += 8;
@@ -3100,8 +3103,8 @@ namespace DuckGame
                             if (hSpeed > -maxrun * leftMul)
                             {
                                 hSpeed -= hAcc;
-                                if (hSpeed < -maxrun * leftMul)
-                                    hSpeed = -maxrun * leftMul;
+                                if (hSpeed < -maxrun * leftMul*moveReverse)
+                                    hSpeed = -maxrun * leftMul*moveReverse;
                             }
                             //this._heldLeft = true;
                             if (!strafing && !nudging && (oldAngleCode || _leftPressedFrame > _rightPressedFrame))
@@ -3112,8 +3115,8 @@ namespace DuckGame
                             if (hSpeed < maxrun * rightMul)
                             {
                                 hSpeed += hAcc;
-                                if (hSpeed > maxrun * rightMul)
-                                    hSpeed = maxrun * rightMul;
+                                if (hSpeed > maxrun * rightMul*moveReverse)
+                                    hSpeed = maxrun * rightMul*moveReverse;
                             }
                             //this._heldRight = true;
                             if (!strafing && !nudging && (oldAngleCode || _rightPressedFrame > _leftPressedFrame))
@@ -4125,7 +4128,6 @@ namespace DuckGame
             _gripped = false;
             if (hasBrainRot) UpdateBrainRot();
         }
-
         public void GiveBrainRot()
         {
             if (!hasBrainRot)
@@ -4135,6 +4137,10 @@ namespace DuckGame
                 Level.Add(bubble);
                 SFX.Play("radioNoise", 0.8f);
             }
+        }
+        public void RemoveBrainRot(){
+            hasBrainRot = false;
+            Level.Remove(bubble);
         }
         public bool hasBrainRot;
         public BrainRotBubble bubble;

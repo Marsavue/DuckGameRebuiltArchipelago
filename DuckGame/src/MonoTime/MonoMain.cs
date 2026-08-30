@@ -1318,6 +1318,7 @@ namespace DuckGame
         public void RunUpdate(GameTime gameTime)
         {
             ++Graphics.frame;
+            ArchipelagoClient.Update();
             Tasker.RunTasks();
             Graphics.GarbageDisposal(false);
             if (!_started)

@@ -136,8 +136,10 @@ namespace DuckGame
         public static string address = "archipelago.gg";
         public static string port = "38281";
         public static string pass = "";
-        private static bool popupQueueActive = true;
         private static List<PopupQueueData> popupQueue = new List<PopupQueueData>();
+        private static bool firstPopupRun = true;
+        private static List<PopupQueueData> fillerQueue = new List<PopupQueueData>();
+        private static bool firstFillerRun = true;
         private class PopupQueueData {
             public string itemName;
             public bool itemReceived;
@@ -162,12 +164,16 @@ namespace DuckGame
                 enabledMedals = enabledMedalsNew;
             }
         }
+        private static ChallengeLevel currentLevel;
+        private static Duck currentDuck;
 
         public static void Connect(){
             availableLevels.Clear();
             availableItems.Clear();
             popupQueue.Clear();
-            popupQueueActive = true;
+            firstPopupRun = true;
+            fillerQueue.Clear();
+            firstFillerRun = true;
             slotData = new SlotData();
             bool success = int.TryParse(port, out int portNum);
             if (!success){
@@ -209,7 +215,6 @@ namespace DuckGame
             }
             slotData = new SlotData((long)loginSuccess.SlotData["medal_count_goal"],(long)loginSuccess.SlotData["send_lower_medals"]!=0,enabledMedals);
             HUD.AddInputChangeDisplay("@PLUG@|LIME|AP Connected");
-            new Task(() => { System.Threading.Thread.Sleep(1000);ProcessPopupQueue(true);}).Start();
             CheckIfGoaled();
         }
         public static void Disconnect(){
@@ -219,12 +224,19 @@ namespace DuckGame
             availableLevels.Clear();
             availableItems.Clear();
             popupQueue.Clear();
+            fillerQueue.Clear();
+            session = null;
             HUD.AddInputChangeDisplay("@UNPLUG@|RED|AP Disconnected");
         }
-        public static void CheckConnection(){
-            if (!session.Socket.Connected){
-                HUD.AddInputChangeDisplay("@UNPLUG@|RED|AP Disconnected");
+        public static bool CheckConnection(){
+            if (session!=null){
+                if (!session.Socket.Connected){
+                    HUD.AddInputChangeDisplay("@UNPLUG@|RED|AP Disconnected");
+                    return false;
+                }
+                return true;
             }
+            return false;
         }
         private static void ItemReceived(IReceivedItemsHelper helper){
             ItemInfo newItem = helper.DequeueItem();
@@ -234,33 +246,13 @@ namespace DuckGame
                     availableLevels.Add(name2level[itemName]);
                 }else if (name2item.Keys.Contains(itemName)&&!availableItems.Contains(name2item[itemName])){
                     availableItems.Add(name2item[itemName]);
+                }else if (newItem.Flags == ItemFlags.Trap || newItem.Flags == ItemFlags.None){
+                    fillerQueue.Add(new PopupQueueData(itemName,true,newItem.Flags));
+                    return;
                 }
                 popupQueue.Add(new PopupQueueData(itemName,true,newItem.Flags));
-                if (!popupQueueActive){new Task(() => {ProcessPopupQueue();}).Start();}
             }
         }
-        private static void ProcessPopupQueue(bool first = false){
-            if (popupQueue.Count > 0){
-                popupQueueActive = true;
-                if (first){System.Threading.Thread.Sleep(500);}
-                else{System.Threading.Thread.Sleep(1000);}
-                if (popupQueue.Count > 0){
-                    PopupQueueData item = popupQueue[0];
-                    popupQueue.RemoveAt(0);
-                    string displayText = " ";
-                    if (item.itemReceived){displayText += "Recv: ";}
-                    else{displayText += "Sent: ";}
-                    displayText+=item.itemClass;
-                    displayText+=item.itemName;
-                    HUD.AddInputChangeDisplay(displayText+" ");
-                    ProcessPopupQueue(first);
-                }
-                return;
-            }
-            popupQueueActive = false;
-            return;
-        }
-
         private static void SessionSocketClosed(string reason){
             Disconnect();
         }
@@ -327,7 +319,216 @@ namespace DuckGame
             foreach(ScoutedItemInfo item in packet.Values){
                 popupQueue.Add(new PopupQueueData(item.ItemName,false,item.Flags));
             }
-            if (!popupQueueActive){new Task(() => {ProcessPopupQueue();}).Start();}
+        }
+        public static void SetLevel(ChallengeLevel newLevel,Duck newDuck){
+            currentLevel = newLevel;
+            currentDuck = newDuck;
+            fillerFrame = 0;
+            perFillerFrame = 0;
+            perFillerTimes = 0;
+        }
+        public static void Update(){
+            ProcessPopupQueue();
+            if (CheckConnection()){
+                ProcessFillerQueue();
+            }
+        }
+        private static long popupFrame = 0;
+        private static void ProcessPopupQueue(){
+            if (popupFrame>0){
+                popupFrame++;
+                if (popupFrame == 60){
+                    popupFrame = 0;
+                }else{
+                    return;
+                }
+            }
+            if (firstPopupRun){
+                firstPopupRun = false;
+                popupQueue.Clear();
+            }
+            if (popupQueue.Count > 0){
+                PopupQueueData item = popupQueue[0];
+                popupQueue.RemoveAt(0);
+                string displayText = " ";
+                if (item.itemReceived){displayText += "Recv: ";}
+                else{displayText += "Sent: ";}
+                displayText+=item.itemClass;
+                displayText+=item.itemName;
+                HUD.AddInputChangeDisplay(displayText+" ");
+                popupFrame++;
+            }
+        }
+        private static long fillerFrame = 0;
+        private static long perFillerFrame = 0;
+        private static long perFillerTimes = 0;
+        public static void ProcessFillerQueue(){
+            if (fillerFrame>0){
+                // if (fillerFrame==1){
+                    // popupQueue.Add(new PopupQueueData("Trap Complete",true,ItemFlags.None));
+                    // fillerQueue.RemoveAt(0);
+                // }
+                fillerFrame++;
+                if (fillerFrame == 300){
+                    popupQueue.Add(new PopupQueueData("Trap Complete",true,ItemFlags.None));
+                    fillerQueue.RemoveAt(0);
+                    fillerFrame = 0;
+                    perFillerFrame = 0;
+                    perFillerTimes = 0;
+                }else{
+                    return;
+                }
+            }
+            if (firstFillerRun){
+                firstFillerRun = false;
+                fillerQueue.Clear();
+            }
+            if (fillerQueue.Count>0){
+                if (Level.current == currentLevel){
+                    PopupQueueData item = fillerQueue[0];
+                    if (fillerFrame==0&&perFillerFrame==0&&perFillerTimes==0){popupQueue.Add(item);}
+                    switch(item.itemName){
+                    case "Clumsy":
+                        if (perFillerFrame==0&&perFillerTimes==0){
+                            currentDuck.GoRagdoll();}
+                        if (perFillerFrame == 180){
+                            currentDuck.GoRagdoll();
+                            perFillerFrame = 0;
+                            perFillerTimes++;
+                            if (perFillerTimes == 4){
+                                fillerFrame++;
+                            }
+                        }
+                        break;
+                    case "Stop Hitting Yourself":
+                        if (perFillerFrame==0&&perFillerTimes==0){
+                            currentDuck.GiveBrainRot();}
+                        if (perFillerFrame == 900){
+                            currentDuck.RemoveBrainRot();
+                            fillerFrame++;
+                        }
+                        break;
+                    case "FIREEE!":
+                        currentDuck.Burn(new Vec2(0,0),currentDuck);
+                        fillerFrame++;
+                        break;
+                    case "FIREEE*":
+                        if (perFillerFrame==0&&perFillerTimes==0){
+                            currentDuck.Burn(new Vec2(0,0),currentDuck);}
+                        if (perFillerFrame == 190){
+                            currentDuck.Extinquish();
+                            fillerFrame++;
+                        }
+                        break;
+                    case "Slippery Hands":
+                        currentDuck.ThrowItem();
+                        fillerFrame++;
+                        break;
+                    case "Whats Under There?":
+                        if (perFillerFrame==0&&perFillerTimes==0){
+                            currentDuck.AdvanceServerTime(5);}
+                        if (perFillerFrame == 15){
+                            currentDuck.AdvanceServerTime(5);
+                            perFillerFrame = 0;
+                            perFillerTimes++;
+                            if (perFillerTimes == 24){
+                                fillerFrame++;
+                            }
+                        }
+                        break;
+                    case "Caught You!":
+                        currentDuck.Netted(new Net(0,0,currentDuck));
+                        fillerFrame++;
+                        break;
+                    case "Duck Season":
+                        if (perFillerFrame==0&&perFillerTimes==0){
+                            SuicidePistol suicidePistol = new SuicidePistol(currentDuck.x,currentDuck.y);
+                            Level.Add(suicidePistol,true);
+                            currentDuck.GiveHoldable(suicidePistol);
+                        }
+                        fillerFrame++;
+                        break;
+                    case "Hot Potato":
+                        Grenade grenade = new Grenade(0,0);
+                        grenade.OnPressAction();
+                        Level.Add(grenade,true);
+                        currentDuck.GiveHoldable(grenade);
+                        fillerFrame++;
+                        break;
+                    case "Whats This?":
+                        Holdable randomItem = ItemBoxRandom.GetRandomItem<Holdable>();
+                        randomItem.position = new Vec2(0,0);
+                        Level.Add(randomItem,true);
+                        currentDuck.GiveHoldable(randomItem);
+                        fillerFrame++;
+                        break;
+                    case "esreveR":
+                        if (perFillerFrame==0&&perFillerTimes==0){
+                            currentDuck.moveReverse=-1;}
+                        if (perFillerFrame == 600){
+                            currentDuck.moveReverse=1;
+                            fillerFrame++;
+                        }
+                        break;
+                    case "A Gift for you":
+                        DeathCrate crate = new DeathCrate(currentDuck.position.x,currentDuck.position.y);
+                        crate.settingIndex = (byte)Rando.Int(12);
+                        Level.Add(crate,true);
+                        crate.activated = true;
+                        fillerFrame++;
+                        break;
+                    case "Don't look up":
+                        long amount = 5;
+                        float seperation = (currentLevel.topLeft.x-currentLevel.bottomRight.x)/amount;
+                        for (int i = 0; i < amount; i++)
+                        {
+                            for (int a = 0; a < amount; a++)
+                            {
+                                Grenade gren1 = new Grenade(seperation*i+currentDuck.position.x,currentDuck.position.y+a*seperation);
+                                gren1.OnPressAction();
+                                Level.Add(gren1,true);
+                                Grenade gren2 = new Grenade(-seperation*i+currentDuck.position.x,currentDuck.position.y-a*seperation);
+                                gren2.OnPressAction();
+                                Level.Add(gren2,true);
+                                Grenade gren3 = new Grenade(seperation*i+currentDuck.position.x,currentDuck.position.y+a*-seperation);
+                                gren3.OnPressAction();
+                                Level.Add(gren3,true);
+                                Grenade gren4 = new Grenade(-seperation*i+currentDuck.position.x,currentDuck.position.y-a*-seperation);
+                                gren4.OnPressAction();
+                                Level.Add(gren4,true);
+                            }
+                        }
+                        fillerFrame++;
+                        break;
+                    case "Prot V":
+                        Helmet newHelmet = new Helmet(0,0);
+                        Level.Add(newHelmet,true);
+                        currentDuck.Equip(newHelmet);
+                        ChestPlate newChestPlate = new ChestPlate(0,0);
+                        Level.Add(newChestPlate,true);
+                        currentDuck.Equip(newChestPlate);
+                        Boots newBoots = new Boots(0,0);
+                        Level.Add(newBoots,true);
+                        currentDuck.Equip(newBoots);
+                        fillerFrame++;
+                        break;
+                    case "Make it rain":
+                        if (currentDuck.holdObject is Gun){
+                            Gun ob = currentDuck.holdObject as Gun;
+                            ob.ammo = 999999;
+                        }
+                        fillerFrame++;
+                        break;
+                    default:
+                        fillerQueue.RemoveAt(0);
+                        return;
+                    }
+                    perFillerFrame++;
+                }
+            }
+            // MODIFIERS
+            // QWOP mode
+            // DevConsole.qwopMode = true;
         }
     }
 }

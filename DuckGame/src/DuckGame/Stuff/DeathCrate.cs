@@ -16,6 +16,21 @@ namespace DuckGame
         private static List<DeathCrateSetting> _settings = new List<DeathCrateSetting>();
         private bool _didActivation;
         public bool activated;
+
+        // INDEX ORDER from 0
+        // DuckGame.DCBananaParty
+        // DuckGame.DCBulletHell
+        // DuckGame.DCExplodeFire
+        // DuckGame.DCGasFire
+        // DuckGame.DCGrenadeParty
+        // DuckGame.DCHighEnergySurprise
+        // DuckGame.DCIonCannon
+        // DuckGame.DCMineParty
+        // DuckGame.DCNetCity
+        // DuckGame.DCPresentExplosion
+        // DuckGame.DCRomanCandle
+        // DuckGame.DCSwordAdventure
+        // DuckGame.DCTotalRandomCrap
         public byte settingIndex;
         public DeathCrateSetting _storedSetting;
 

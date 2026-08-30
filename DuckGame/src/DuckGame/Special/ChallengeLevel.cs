@@ -662,6 +662,7 @@ namespace DuckGame
                             ++_waitAfterSpawnDings;
                             if (_waitAfterSpawnDings > 2)
                             {
+                                ArchipelagoClient.SetLevel(this,_duck);
                                 _started = true;
                                 simulatePhysics = true;
                                 running = true;
