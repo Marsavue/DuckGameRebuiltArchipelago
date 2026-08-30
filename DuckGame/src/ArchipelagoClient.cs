@@ -218,14 +218,13 @@ namespace DuckGame
             CheckIfGoaled();
         }
         public static void Disconnect(){
-            if (session.Socket.Connected){
-                session?.Socket.DisconnectAsync();
-            }
+            if (session!=null&&session.Socket.Connected){
+                session.Socket.DisconnectAsync().ContinueWith(t => session=null);
+            }else{session = null;}
             availableLevels.Clear();
             availableItems.Clear();
             popupQueue.Clear();
             fillerQueue.Clear();
-            session = null;
             HUD.AddInputChangeDisplay("@UNPLUG@|RED|AP Disconnected");
         }
         public static bool CheckConnection(){
