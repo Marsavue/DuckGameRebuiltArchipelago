@@ -323,6 +323,8 @@ namespace DuckGame
         public static void SetLevel(ChallengeLevel newLevel,Duck newDuck){
             currentLevel = newLevel;
             currentDuck = newDuck;
+        }
+        public static void ResetFillerFrames(){
             fillerFrame = 0;
             perFillerFrame = 0;
             perFillerTimes = 0;
@@ -364,17 +366,17 @@ namespace DuckGame
         private static long perFillerTimes = 0;
         public static void ProcessFillerQueue(){
             if (fillerFrame>0){
-                // if (fillerFrame==1){
-                    // popupQueue.Add(new PopupQueueData("Trap Complete",true,ItemFlags.None));
-                    // fillerQueue.RemoveAt(0);
-                // }
-                fillerFrame++;
-                if (fillerFrame == 300){
-                    popupQueue.Add(new PopupQueueData("Trap Complete",true,ItemFlags.None));
-                    fillerQueue.RemoveAt(0);
-                    fillerFrame = 0;
-                    perFillerFrame = 0;
-                    perFillerTimes = 0;
+                if (Level.current == currentLevel){
+                    fillerFrame++;
+                    if (fillerFrame == 300){
+                        popupQueue.Add(new PopupQueueData("Trap Complete",true,ItemFlags.None));
+                        fillerQueue.RemoveAt(0);
+                        fillerFrame = 0;
+                        perFillerFrame = 0;
+                        perFillerTimes = 0;
+                    }else{
+                        return;
+                    }
                 }else{
                     return;
                 }
@@ -410,7 +412,7 @@ namespace DuckGame
                         break;
                     case "FIREEE!":
                         currentDuck.Burn(new Vec2(0,0),currentDuck);
-                        fillerFrame++;
+                        fillerFrame=150;
                         break;
                     case "FIREEE*":
                         if (perFillerFrame==0&&perFillerTimes==0){

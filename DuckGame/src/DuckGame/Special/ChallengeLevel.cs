@@ -165,6 +165,8 @@ namespace DuckGame
             _developer = false;
             if (challenge.wonTrophies.Count > 0)
             {
+                ArchipelagoClient.SetLevel(null,null);
+                ArchipelagoClient.ResetFillerFrames();
                 ArchipelagoClient.SendItem(challengeName,challenge.wonTrophies[0].type.ToString());
                 SFX.Play("scoreDing");
                 _win = true;
@@ -663,6 +665,7 @@ namespace DuckGame
                             if (_waitAfterSpawnDings > 2)
                             {
                                 ArchipelagoClient.SetLevel(this,_duck);
+                                ArchipelagoClient.ResetFillerFrames();
                                 _started = true;
                                 simulatePhysics = true;
                                 running = true;
@@ -688,6 +691,7 @@ namespace DuckGame
         {
             if (Input.Pressed(Triggers.Start))
             {
+                ArchipelagoClient.SetLevel(null,null);
                 _pauseGroup.Open();
                 _pauseMenu.Open();
                 MonoMain.pauseMenu = _pauseGroup;
@@ -701,6 +705,7 @@ namespace DuckGame
             }
             else
             {
+                ArchipelagoClient.SetLevel(this,_duck);
                 if (!_paused || MonoMain.pauseMenu != null)
                     return;
                 _paused = false;
