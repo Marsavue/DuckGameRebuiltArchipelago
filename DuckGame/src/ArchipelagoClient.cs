@@ -12,6 +12,7 @@ using Archipelago.MultiClient.Net;
 using Archipelago.MultiClient.Net.Enums;
 using Archipelago.MultiClient.Net.Helpers;
 using Archipelago.MultiClient.Net.Models;
+using Archipelago.MultiClient.Net.BounceFeatures.DeathLink;
 using HarmonyLib;
 
 namespace DuckGame
@@ -130,38 +131,68 @@ namespace DuckGame
             {"Developer",5},
         };
         private static ArchipelagoSession session;
-        private static List<string> availableLevels = new List<string>();
-        private static List<Type> availableItems = new List<Type>();
+        private static DeathLinkService deathLink;
+        public static int deathLinkAmnesty;
         public static string slot = "";
         public static string address = "archipelago.gg";
         public static string port = "38281";
         public static string pass = "";
+        private static List<string> availableLevels = new List<string>();
+        private static List<Type> availableItems = new List<Type>();
         private static List<PopupQueueData> popupQueue = new List<PopupQueueData>();
         private static bool firstPopupRun = true;
-        private static List<PopupQueueData> fillerQueue = new List<PopupQueueData>();
-        private static bool firstFillerRun = true;
         private class PopupQueueData {
-            public string itemName;
-            public bool itemReceived;
-            public string itemClass;
-            public PopupQueueData(string name, bool received, ItemFlags iclass){
-                itemName = name;
-                itemReceived = received;
-                if (iclass == ItemFlags.Advancement){itemClass="|PURPLE|";}
-                else if (iclass == ItemFlags.NeverExclude){itemClass="|BLUE|";}
-                else if (iclass == ItemFlags.None){itemClass="|AQUA|";}
-                else if (iclass == ItemFlags.Trap){itemClass="|RED|";}
+            public string text;
+            public PopupQueueData(string itemName, bool received, ItemFlags iclass){
+                if (received){
+                    text += "Recv: ";
+                }else{
+                    text += "Sent: ";
+                }
+                if (iclass == ItemFlags.Advancement){text+="|PURPLE|";}
+                else if (iclass == ItemFlags.NeverExclude){text+="|BLUE|";}
+                else if (iclass == ItemFlags.None){text+="|AQUA|";}
+                else if (iclass == ItemFlags.Trap){text+="|RED|";}
+                text += itemName;
+            }
+            public PopupQueueData(string firstText, string newColour, string secondText){
+                text = firstText + newColour + secondText;
             }
         }
-        private static SlotData slotData;
-        private class SlotData {
+        private static List<FillerQueueData> fillerQueue = new List<FillerQueueData>();
+        private static bool firstFillerRun = true;
+        private class FillerQueueData {
+            public string itemName;
+            public ItemFlags itemClass;
+            public FillerQueueData(string newItemName, ItemFlags newItemClass){
+                itemName = newItemName;
+                itemClass = newItemClass;
+            }
+        }
+        public static SlotData slotData = new SlotData();
+        public class SlotData {
             public long medalCountGoal;
             public bool sendLowerMedals;
             public List<string> enabledMedals;
-            public SlotData(long medalCount=150, bool lowerMedals=true, List<string>enabledMedalsNew=null){
+            private bool deathLinkEnabled;
+            public bool DeathLinkEnabled{
+                get { return deathLinkEnabled; }
+                set {
+                    deathLinkEnabled = value;
+                    if (deathLink!=null){
+                        if (deathLinkEnabled){
+                            deathLink.EnableDeathLink();
+                        }else{
+                            deathLink.DisableDeathLink();
+                        }}}
+            }
+            public int deathLinkAmnestyMax;
+            public SlotData(long medalCount=150,bool lowerMedals=true,List<string>enabledMedalsNew=null,bool newdeathLinkEnabled=false,long newdeathLinkAmnesty=0){
                 medalCountGoal = medalCount;
                 sendLowerMedals = lowerMedals;
                 enabledMedals = enabledMedalsNew;
+                deathLinkEnabled = newdeathLinkEnabled;
+                deathLinkAmnestyMax = (int)newdeathLinkAmnesty;
             }
         }
         private static ChallengeLevel currentLevel;
@@ -174,7 +205,6 @@ namespace DuckGame
             firstPopupRun = true;
             fillerQueue.Clear();
             firstFillerRun = true;
-            slotData = new SlotData();
             bool success = int.TryParse(port, out int portNum);
             if (!success){
                 return;
@@ -207,20 +237,27 @@ namespace DuckGame
                 return; // Did not connect, show the user the contents of `errorMessage`
             }
             LoginSuccessful loginSuccess = (LoginSuccessful)result;
+            deathLink = DeathLinkProvider.CreateDeathLinkService(session);
+            deathLink.OnDeathLinkReceived += DeathLinkReceived;
+            deathLinkAmnesty = 0;
             List<string> enabledMedals = new List<string>(){}; 
             foreach(string medal in medalOrder.Keys){
                 if ((long)loginSuccess.SlotData["use_"+medal.ToLower()+"_medal"]!=0){
                     enabledMedals.Add(medal);
                 }
             }
-            slotData = new SlotData((long)loginSuccess.SlotData["medal_count_goal"],(long)loginSuccess.SlotData["send_lower_medals"]!=0,enabledMedals);
+            slotData.medalCountGoal = (long)loginSuccess.SlotData["medal_count_goal"];
+            slotData.sendLowerMedals = (long)loginSuccess.SlotData["send_lower_medals"]!=0;
+            slotData.enabledMedals = enabledMedals;
+            slotData.DeathLinkEnabled = (long)loginSuccess.SlotData["death_link"]!=0;
+            slotData.deathLinkAmnestyMax = (int)(long)loginSuccess.SlotData["death_link_amnesty"];
             HUD.AddInputChangeDisplay("@PLUG@|LIME|AP Connected");
             CheckIfGoaled();
         }
         public static void Disconnect(){
             if (session!=null&&session.Socket.Connected){
-                session.Socket.DisconnectAsync().ContinueWith(t => session=null);
-            }else{session = null;}
+                session.Socket.DisconnectAsync().ContinueWith(t => (session=null,deathLink=null));
+            }else{session = null;deathLink=null;}
             availableLevels.Clear();
             availableItems.Clear();
             popupQueue.Clear();
@@ -231,6 +268,16 @@ namespace DuckGame
             if (session!=null){
                 if (!session.Socket.Connected){
                     HUD.AddInputChangeDisplay("@UNPLUG@|RED|AP Disconnected");
+                    return false;
+                }
+                return true;
+            }
+            HUD.AddInputChangeDisplay("@UNPLUG@|RED|AP Disconnected");
+            return false;
+        }
+        public static bool CheckConnectionNoPopup(){
+            if (session!=null){
+                if (!session.Socket.Connected){
                     return false;
                 }
                 return true;
@@ -246,7 +293,7 @@ namespace DuckGame
                 }else if (name2item.Keys.Contains(itemName)&&!availableItems.Contains(name2item[itemName])){
                     availableItems.Add(name2item[itemName]);
                 }else if (newItem.Flags == ItemFlags.Trap || newItem.Flags == ItemFlags.None){
-                    fillerQueue.Add(new PopupQueueData(itemName,true,newItem.Flags));
+                    fillerQueue.Add(new FillerQueueData(itemName,newItem.Flags));
                     return;
                 }
                 popupQueue.Add(new PopupQueueData(itemName,true,newItem.Flags));
@@ -258,6 +305,25 @@ namespace DuckGame
         private static void SessionErrorReceived(Exception e, string message){
             Disconnect();
         }
+        private static void DeathLinkReceived(DeathLink deathLink){
+            popupQueue.Insert(0, new PopupQueueData("DL: |AQUA|"+deathLink.Source+" |WHITE|- ","|RED|",deathLink.Cause));
+            if (Level.current==currentLevel){
+                currentDuck.Kill(new DTCrush(currentDuck),false);
+            }else if (Level.current is ArcadeLevel){
+                (Level.current as ArcadeLevel).RagdollDuck();
+            }
+        }
+        public static void SendDeathLink(string cause){
+            if (session==null||deathLink==null){return;}
+            if (slotData.DeathLinkEnabled){
+                if (slotData.deathLinkAmnestyMax!=0){
+                    deathLinkAmnesty+=1;
+                    if (deathLinkAmnesty>=slotData.deathLinkAmnestyMax){
+                        deathLinkAmnesty=0;
+                        popupQueue.Insert(0, new PopupQueueData("SEND DL: ","|RED|",cause));
+                        deathLink.SendDeathLink(new DeathLink(slot,cause));
+                    }}}
+        }
         public static bool LevelExists(string level){
             CheckConnection();
             if (level2name.Keys.Contains(level)){return availableLevels.Contains(level);}
@@ -268,8 +334,17 @@ namespace DuckGame
             if (name2item.Values.Contains(item.GetType())){return availableItems.Contains(item.GetType());}
             return true;
         }
+        public static string GetAllItems(){
+            CheckConnection();
+            string allItems="Items:\n";
+            foreach (Type item in availableItems){
+                allItems+=item.ToString().Substring(9)+"\n";
+            }
+            return allItems;
+        }
         public static TrophyType GetBestTrophy(string level){
             TrophyType highestMedal = TrophyType.Baseline;
+            if (session==null){return highestMedal;}
             foreach(string medal in slotData.enabledMedals){
                 if (session.Locations.AllLocationsChecked.Contains(session.Locations.GetLocationIdFromName("DuckGame",level2name[level]+" "+medal+" Medal"))){
                     highestMedal=(TrophyType)medalOrder[medal];
@@ -283,13 +358,13 @@ namespace DuckGame
             if (session.Locations.AllLocationsChecked.Count+extra >= slotData.medalCountGoal){
                 session.SetGoalAchieved();
                 popupQueue.Clear();
-                HUD.AddInputChangeDisplay(" |LIME| GAME IS BEATEN YAYAY <333 ");
+                HUD.AddInputChangeDisplay("|LIME| GAME IS BEATEN YAYAY <333 ");
                 return true;
             }
             return false;
         }
         public static void SendItem(string level,string wonMedal){
-            if (CheckIfGoaled()){return;}
+            if (session==null){return;}
             List<long> locations = new List<long>();
             if (slotData.sendLowerMedals){
                 foreach (string medal in medalOrder.Keys.ToList().GetRange(0,medalOrder[wonMedal])){
@@ -330,7 +405,7 @@ namespace DuckGame
         }
         public static void Update(){
             ProcessPopupQueue();
-            if (CheckConnection()){
+            if (CheckConnectionNoPopup()){
                 ProcessFillerQueue();
             }
         }
@@ -338,7 +413,7 @@ namespace DuckGame
         private static void ProcessPopupQueue(){
             if (popupFrame>0){
                 popupFrame++;
-                if (popupFrame == 60){
+                if (popupFrame == 75){
                     popupFrame = 0;
                 }else{
                     return;
@@ -351,25 +426,21 @@ namespace DuckGame
             if (popupQueue.Count > 0){
                 PopupQueueData item = popupQueue[0];
                 popupQueue.RemoveAt(0);
-                string displayText = " ";
-                if (item.itemReceived){displayText += "Recv: ";}
-                else{displayText += "Sent: ";}
-                displayText+=item.itemClass;
-                displayText+=item.itemName;
-                HUD.AddInputChangeDisplay(displayText+" ");
+                HUD.AddInputChangeDisplay(" "+item.text+" ");
                 popupFrame++;
             }
         }
         private static long fillerFrame = 0;
         private static long perFillerFrame = 0;
         private static long perFillerTimes = 0;
-        public static void ProcessFillerQueue(){
+        private static void ProcessFillerQueue(){
             if (fillerFrame>0){
                 if (Level.current == currentLevel){
                     fillerFrame++;
-                    if (fillerFrame == 300){
-                        popupQueue.Add(new PopupQueueData("Trap Complete",true,ItemFlags.None));
+                    if (fillerFrame == 240){
+                        popupQueue.Insert(0, new PopupQueueData("Trap Complete","",""));
                         fillerQueue.RemoveAt(0);
+                    }else if (fillerFrame == 300){
                         fillerFrame = 0;
                         perFillerFrame = 0;
                         perFillerTimes = 0;
@@ -386,8 +457,11 @@ namespace DuckGame
             }
             if (fillerQueue.Count>0){
                 if (Level.current == currentLevel){
-                    PopupQueueData item = fillerQueue[0];
-                    if (fillerFrame==0&&perFillerFrame==0&&perFillerTimes==0){popupQueue.Add(item);}
+                    FillerQueueData item = fillerQueue[0];
+                    if (fillerFrame==0&&perFillerFrame==0&&perFillerTimes==0){
+                        if (popupQueue.Count>0&&popupQueue[0].text=="Trap Complete"){popupQueue.Insert(1, new PopupQueueData(item.itemName,true,item.itemClass));}
+                        else{popupQueue.Insert(0, new PopupQueueData(item.itemName,true,item.itemClass));}
+                    }
                     switch(item.itemName){
                     case "Clumsy":
                         if (perFillerFrame==0&&perFillerTimes==0){

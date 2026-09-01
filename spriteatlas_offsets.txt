@@ -561,7 +561,7 @@ furni/bar/pooltablelighting 2313 3926 80 33
 arcade/lightSphere 2121 3926 57 56
 warpgun 4185 3781 17 95
 inkStain 2200 450 96 16
-challengeTrophyIcons 4217 2110 16 96
+challengeTrophyIcons 4217 2110 16 112
 furni/cheap/broken window 2747 3142 88 24
 waterCoolerJug 2697 3604 48 64
 waterCoolerJugLine 1574 3955 48 64

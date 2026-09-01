@@ -201,7 +201,7 @@ namespace DuckGame
             _sequence.Finished();
         }
 
-        public override bool Kill(DestroyType type = null)
+        public override bool Kill(DestroyType type = null,bool sendDeathLink=true)
         {
             if (_up && _popup)
             {

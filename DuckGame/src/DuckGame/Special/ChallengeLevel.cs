@@ -61,7 +61,6 @@ namespace DuckGame
         public ChallengeLevel(string name)
           : base(name)
         {
-            // Console.WriteLine(name + " Started");
             challengeName = name;
             _followCam = new FollowCam
             {

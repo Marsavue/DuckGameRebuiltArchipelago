@@ -210,6 +210,11 @@ namespace DuckGame
             _pauseGroup.Add(_pauseMenu, false);
             Options.AddMenus(_pauseGroup);
             Options.openOnClose = _pauseMenu;
+            _pauseMenu.SetOpenFunction(new UIMenuActionCallFunction(new UIMenuActionCallFunction.Function(PlacePauseHud)));
+            _pauseMenu.SetCloseFunction(new UIMenuActionCallFunction(new UIMenuActionCallFunction.Function(HUD.CloseAllCorners)));
+            Options.optionsMenu.SetOpenFunction(new UIMenuActionCallFunction(new UIMenuActionCallFunction.Function(HUD.CloseAllCorners)));
+            _advancedMenu.SetOpenFunction(new UIMenuActionCallFunction(new UIMenuActionCallFunction.Function(HUD.CloseAllCorners)));
+            _confirmMenu.SetOpenFunction(new UIMenuActionCallFunction(new UIMenuActionCallFunction.Function(HUD.CloseAllCorners)));
             _confirmMenu.Add(new UIMenuItem("NO!", new UIMenuActionOpenMenu(_confirmMenu, _pauseMenu), UIAlign.Left, backButton: true), true);
             _confirmMenu.Add(new UIMenuItem("YES!", new UIMenuActionCloseMenuSetBoolean(_pauseGroup, _quit)), true);
             _confirmMenu.Close();
@@ -256,6 +261,22 @@ namespace DuckGame
         {
         }
         public Vec2 SpawnPosition = Vec2.Zero;
+        private void PlacePauseHud(){
+            HUD.AddCornerMessageWithScale(HUDCorner.TopLeft, ArchipelagoClient.GetAllItems(), 0.5f);
+            if (ArchipelagoClient.CheckConnectionNoPopup()){
+                string deathLinkText = "";
+                if(ArchipelagoClient.slotData.DeathLinkEnabled){deathLinkText+="|RED|"+ArchipelagoClient.slotData.DeathLinkEnabled.ToString()+"\n|WHITE|DL Amnesty: "+ArchipelagoClient.deathLinkAmnesty+" of "+ArchipelagoClient.slotData.deathLinkAmnestyMax;}
+                else{deathLinkText+=ArchipelagoClient.slotData.DeathLinkEnabled.ToString();}
+                HUD.AddCornerMessageWithScale(HUDCorner.BottomLeft, "@PLUG@|LIME|AP Connected\n|WHITE|DL: "+deathLinkText, 0.75f);
+            }else{
+                HUD.AddCornerMessageWithScale(HUDCorner.BottomLeft, "@UNPLUG@|RED|AP Disconnected", 0.75f);
+            }
+        }
+        public void RagdollDuck(){
+            if (_duck != null){
+                _duck.GoRagdoll();
+            }
+        }
 
         public override void Update()
         {
@@ -373,6 +394,7 @@ namespace DuckGame
                     }
                     if (_paused && MonoMain.pauseMenu == null)
                     {
+                        ArchipelagoClient.CheckConnection();
                         _paused = false;
                         SFX.Play("resume", 0.6f);
                         if (_quit.value)
@@ -690,6 +712,7 @@ namespace DuckGame
                     }
                     if (Chancy.hover && Input.Pressed(Triggers.Shoot))
                     {
+                        return;
                         _desiredState = ArcadeState.ViewSpecialChallenge;
                         HUD.CloseAllCorners();
                         _hoverMachine = null;
@@ -727,6 +750,7 @@ namespace DuckGame
                         obj = _arcade;
                         if (Input.Pressed(Triggers.Shoot))
                         {
+                            return;
                             _desiredState = ArcadeState.ViewChallengeList;
                             HUD.CloseAllCorners();
                             Chancy.OpenChallengeList();
@@ -752,19 +776,23 @@ namespace DuckGame
                                 if (challenge2 != null)
                                 {
                                     // ChallengeSaveData saveData = _duck.profile.GetSaveData(challenge2.levelID);
-                                    TrophyType challenge2trophy = ArchipelagoClient.GetBestTrophy(challenge2.levelID);
-                                    if (challenge2trophy == TrophyType.Baseline)
-                                        text += "@BASELINE@";
-                                    else if (challenge2trophy == TrophyType.Bronze)
-                                        text += "@BRONZE@";
-                                    else if (challenge2trophy == TrophyType.Silver)
-                                        text += "@SILVER@";
-                                    else if (challenge2trophy == TrophyType.Gold)
-                                        text += "@GOLD@";
-                                    else if (challenge2trophy == TrophyType.Platinum)
-                                        text += "@PLATINUM@";
-                                    else if (challenge2trophy == TrophyType.Developer)
-                                        text += "@DEVELOPER@";
+                                    if (!ArchipelagoClient.LevelExists(challenge2.levelID)){
+                                        text+="@CHALLOCKED@";
+                                    }else{
+                                        TrophyType challenge2trophy = ArchipelagoClient.GetBestTrophy(challenge2.levelID);
+                                        if (challenge2trophy == TrophyType.Baseline)
+                                            text += "@BASELINE@";
+                                        else if (challenge2trophy == TrophyType.Bronze)
+                                            text += "@BRONZE@";
+                                        else if (challenge2trophy == TrophyType.Silver)
+                                            text += "@SILVER@";
+                                        else if (challenge2trophy == TrophyType.Gold)
+                                            text += "@GOLD@";
+                                        else if (challenge2trophy == TrophyType.Platinum)
+                                            text += "@PLATINUM@";
+                                        else if (challenge2trophy == TrophyType.Developer)
+                                            text += "@DEVELOPER@";
+                                    }
                                 }
                             }
                             HUD.AddCornerMessage(HUDCorner.TopRight, text);

@@ -148,7 +148,6 @@ namespace DuckGame
 
         public bool CheckUnlocked(bool ignoreAlreadyUnlocked = true)
         {
-            // Console.WriteLine("CHECK");
             if (ArchipelagoClient.LevelExists(challenge01.value) || ArchipelagoClient.LevelExists(challenge02.value) || ArchipelagoClient.LevelExists(challenge03.value))
                 return true;
             return false;

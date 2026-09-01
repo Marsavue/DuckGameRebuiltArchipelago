@@ -1492,9 +1492,10 @@ namespace DuckGame
                 _desiredSelection = TitleMenuSelection.Play;
                 if (!_enterMultiplayer && _duck.inputProfile.Pressed(Triggers.Select) && MonoMain.pauseMenu == null)
                 {
+                    _enterArcade = true;
                     SFX.Play("plasmaFire");
-                    _enterMultiplayer = true;
-                    _duck.immobilized = true;
+                    // _enterMultiplayer = true;
+                    // _duck.immobilized = true;
                 }
                 if (_duck.inputProfile.Pressed(Triggers.Down) && MonoMain.pauseMenu == null)
                 {

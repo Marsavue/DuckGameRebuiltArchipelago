@@ -1107,7 +1107,7 @@ namespace DuckGame
             return true;
         }
 
-        public virtual bool Kill(DestroyType type = null)
+        public virtual bool Kill(DestroyType type = null,bool sendDeathLink=true)
         {
             if (_killed || (!isKillMessage && invincible && !(type is DTFall) && !(type is DTPop)))
             {
@@ -1207,7 +1207,7 @@ namespace DuckGame
             {
                 killedByProfile = killedBy;
             }
-            OnKill(type);
+            OnKill(type,sendDeathLink);
             Holdable prevHold = holdObject;
             if (!isKillMessage)
             {
@@ -1665,7 +1665,7 @@ namespace DuckGame
             y -= 25000f;
         }
 
-        public void OnKill(DestroyType type = null)
+        public void OnKill(DestroyType type = null,bool sendDeathLink = true)
         {
             if (hasBrainRot)
             {
@@ -1685,6 +1685,7 @@ namespace DuckGame
             switch (type)
             {
                 case DTShot dtShot:
+                    if (sendDeathLink){ArchipelagoClient.SendDeathLink("Took too many bullets");}
                     if (dtShot.bullet != null)
                     {
                         hSpeed = dtShot.bullet.travelDirNormalized.x * (dtShot.bullet.ammo.impactPower + 1f);
@@ -1693,10 +1694,15 @@ namespace DuckGame
                     vSpeed -= 3f;
                     break;
                 case DTIncinerate _:
+                    if (sendDeathLink){ArchipelagoClient.SendDeathLink("Turned into dinner");}
                     Cook();
                     break;
                 case DTPop _:
+                    if (sendDeathLink){ArchipelagoClient.SendDeathLink("Burst like a balloon");}
                     Disappear();
+                    break;
+                default:
+                    if (sendDeathLink){ArchipelagoClient.SendDeathLink("Futility");}
                     break;
             }
         }

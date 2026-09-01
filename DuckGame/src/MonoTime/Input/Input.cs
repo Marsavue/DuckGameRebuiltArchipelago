@@ -650,6 +650,10 @@ namespace DuckGame
             {
                 frame = 5
             });
+            _triggerImageMap.Add("CHALLOCKED", new SpriteMap("challengeTrophyIcons", 16, 16)
+            {
+                frame = 6
+            });
             _triggerImageMap.Add("ONLINEBAD", new SpriteMap("onlineStatusIcons", 7, 7)
             {
                 frame = 0
