@@ -15,11 +15,11 @@ Check pins in the [Archipelago discord](https://discord.com/channels/73120530124
 
 ## Setup Guide
 ### Prerequisites
-- Own the game on steam and have steam open
+- Own the game on steam and have steam open (Duck Game does NOT need to be installed)
 - Linux - mono installed
 
 ### Guide
-1. Download latest version from [Releases](https://github.com/Marsavue/DuckGameRebuiltArchipelago/releases/latest) & unzip
+1. Download [DuckGameArchipelago.zip](https://github.com/Marsavue/DuckGameArchipelago/releases/latest/download/DuckGameArchipelago.zip) from [Releases](https://github.com/Marsavue/DuckGameArchipelago/releases/latest) & unzip
 2. Windows run DuckGame.exe - Linux run DuckGame.sh (need mono installed)
 3. Once game is open, configure slot settings in Pause>Options>Archipelago
 4. Walk into Arcade to connect
