@@ -1,8 +1,10 @@
 # Duck Game Arcade Archipelago
 This project is based off of Duck Game Rebuilt.
+
+### AI Disclosure
 Nothing I make is ever developed using AI, that does not necessarily include Duck Game Rebuilt
 
-## Guide
+## Setup Guide
 You MUST own the game on steam and steam MUST be open
 1. Download latest version from [Releases](https://github.com/Marsavue/DuckGameRebuiltArchipelago/releases/latest) & unzip
 2. Windows run DuckGame.exe - Linux run DuckGame.sh (need mono installed)
